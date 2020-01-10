@@ -15,7 +15,7 @@ You can install the released version of DELocal from
 [CRAN](https://CRAN.R-project.org) with:
 
 ``` r
-install.packages("DELocal")
+devtools::install_github("dasroy/delocal")
 ```
 
 ## Example
