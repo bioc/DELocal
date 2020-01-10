@@ -1,7 +1,5 @@
-# require(gtools)
 require(gplots)
-library(foreach)
-library(doMC)
+
 
 # Returns count data keeping the expression columns at the begining of the data frame.
 getCountsFromDESeqData <-function(ddsHTSeq,isNormalized,exprsnColPattern,geneAnnot){
