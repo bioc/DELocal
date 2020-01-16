@@ -394,6 +394,15 @@ rnaSeq_rank <- function(Methods_list,top_gene){
   )
 }
 
+#' Title
+#'
+#' @param Methods
+#' @param reference
+#'
+#' @return
+#' @export
+#'
+#' @examples
 combo_results <- function(Methods,reference){
   methods_name <-names(Methods)
   for (i in 1:length(methods_name)){
@@ -512,6 +521,16 @@ getNiegbours <- function(xprsn,gene_name){
   return(neighbors)
 }
 
+#' Title
+#'
+#' @param Method_name
+#' @param reference_name
+#' @param reference
+#'
+#' @return
+#' @export
+#'
+#' @examples
 performance_analysis<-function(Method_name, reference_name, reference){
   require(PCRedux)
   results <- data.frame()
