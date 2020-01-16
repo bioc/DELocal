@@ -292,6 +292,14 @@ roc_from_topGenes <- function(top_genes,Methods_list) {
   Method_compare_top
 }
 
+#' Title
+#'
+#' @param Methods_list
+#'
+#' @return
+#' @export
+#'
+#' @examples
 compare_methods <- function(Methods_list){
   results <- list()
   Method_compare <- data.frame(roc_auc = numeric(), method  = character())
