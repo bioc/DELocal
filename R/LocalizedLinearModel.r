@@ -11,6 +11,19 @@ getCountsFromDESeqData <-function(ddsHTSeq,isNormalized,exprsnColPattern,geneAnn
                      grep(exprsnColPattern, colnames(ddsHTSeq_count), invert = TRUE))]
 }
 
+#' Title
+#'
+#' @param residuals
+#' @param selectA
+#' @param selectB
+#' @param pvalue.fdr
+#' @param adjustPara
+#' @param lfc
+#'
+#' @return
+#' @export
+#'
+#' @examples
 newMakeContrastBvsA<-function(residuals, selectA, selectB, pvalue.fdr,adjustPara,lfc)
 {
   require(limma)
