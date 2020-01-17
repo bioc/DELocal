@@ -407,6 +407,15 @@ compare_methods_best <- function(Methods_list){
   results
 }
 
+#' Title
+#'
+#' @param Methods_list
+#' @param top_gene
+#'
+#' @return
+#' @export
+#'
+#' @examples
 rnaSeq_rank <- function(Methods_list,top_gene){
 
   Methods_list$limma <- Methods_list$limma[ order(Methods_list$limma$adj.P.Val),]
