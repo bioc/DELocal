@@ -366,6 +366,14 @@ compare_methods <- function(Methods_list){
   results
 }
 
+#' Title
+#'
+#' @param Methods_list
+#'
+#' @return
+#' @export
+#'
+#' @examples
 compare_methods_best <- function(Methods_list){
   results <- list()
   Method_compare <- data.frame(roc_auc = numeric(), method  = character())
