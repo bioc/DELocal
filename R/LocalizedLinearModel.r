@@ -242,6 +242,15 @@ performance_neighbor<-function(linear_models_list,neighbor_nums,exprsn_contr_col
   list(prformnc=performance_nbor,melt_prformnc=performance_nbor_melt)
 }
 
+#' Title
+#'
+#' @param top_genes
+#' @param Methods_list
+#'
+#' @return
+#' @export
+#'
+#' @examples
 roc_from_topGenes <- function(top_genes,Methods_list) {
   Method_compare_top <- data.frame(top_genes = numeric(),roc_auc=  numeric(), method  = character())
 
