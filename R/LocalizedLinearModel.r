@@ -2,6 +2,17 @@ require(gplots)
 
 
 # Returns count data keeping the expression columns at the begining of the data frame.
+#' Title
+#'
+#' @param ddsHTSeq
+#' @param isNormalized
+#' @param exprsnColPattern
+#' @param geneAnnot
+#'
+#' @return
+#' @export
+#'
+#' @examples
 getCountsFromDESeqData <-function(ddsHTSeq,isNormalized,exprsnColPattern,geneAnnot){
   ddsHTSeq_count<-DESeq2::estimateSizeFactors(ddsHTSeq)
   ddsHTSeq_count<-as.data.frame( DESeq2::counts(ddsHTSeq_count,normalized=isNormalized))

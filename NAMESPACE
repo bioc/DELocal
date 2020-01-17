@@ -3,6 +3,7 @@
 export(DE_Local)
 export(combo_results)
 export(compare_methods)
+export(getCountsFromDESeqData)
 export(newMakeContrastBvsA)
 export(performance_analysis)
 export(roc_from_topGenes)
