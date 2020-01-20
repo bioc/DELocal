@@ -504,6 +504,15 @@ neighbourAnalysis<-
     return(results)
   }
 
+#' Title
+#'
+#' @param gene_xprsn_annotation
+#' @param nearest_neighbours
+#'
+#' @return
+#' @export
+#'
+#' @examples
 GO_neighbourAnalysis<-
   function(gene_xprsn_annotation,nearest_neighbours){
     require(gtools)
