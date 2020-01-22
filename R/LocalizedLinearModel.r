@@ -516,10 +516,15 @@ neighbourAnalysis<-
 GO_neighbourAnalysis<-
   function(gene_xprsn_annotation,nearest_neighbours){
     require(gtools)
-    # parameters :: nearest_neighbours,
 
-    results <-  data.frame(ensembl_gene_id=character(),closest_neighbours = numeric(),
-                           window_neighbours = numeric(), stringsAsFactors=F)
+    results <-
+      data.frame(
+        ensembl_gene_id = character(),
+        closest_neighbours = numeric(),
+        window_neighbours = numeric(),
+        DE_neighbours = numeric(),
+        stringsAsFactors = F
+      )
     for (i in 1:nrow(gene_xprsn_annotation)){
       if(gene_xprsn_annotation[i,]$isGO){
             current_chromosom <- gene_xprsn_annotation[i,]$chromosome_name
@@ -548,12 +553,18 @@ GO_neighbourAnalysis<-
               }
               neighbors <- neighbors[2:num_neighbours,]
               window_neighbours <- sum(neighbors$isGO)
+              DE_neighbours <- sum(neighbors$DE_gene)
 
             }else {
               num_neighbours <- 1
             }
-            results <- rbind(results, data.frame(ensembl_gene_id=current_ensembl_gene_id,
-                                  closest_neighbours = closest_neighbours, window_neighbours = window_neighbours))
+            results <-  rbind(results,data.frame(
+                  ensembl_gene_id = current_ensembl_gene_id,
+                  closest_neighbours = closest_neighbours,
+                  window_neighbours = window_neighbours,
+                  DE_neighbours = DE_neighbours
+                )
+              )
         }
       }
     return(results)
