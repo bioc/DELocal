@@ -55,12 +55,11 @@ newMakeContrastBvsA<-function(residuals, selectA, selectB, pvalue.fdr,adjustPara
 LocalizedLinearModel<-
   function(gene_xprsn_annotation,sample_names,nearest_neighbours){
     require(gtools)
-    # parameters :: nearest_neighbours,
+
     gene_xprsn_annotation <- gene_xprsn_annotation[order(gene_xprsn_annotation$chromosome_name,gene_xprsn_annotation$start_position),]
 
     linear_models <-  data.frame(matrix(vector(), 0,length(sample_names), dimnames=list(c(), sample_names)), stringsAsFactors=F)
-    #df = data.frame(matrix(vector(), 0, 3, dimnames=list(c(), c(E13_Tooth_Br,E14_Tooth_Br,E14_Jaw_NA))), stringsAsFactors=F)
-    i <-27223 #Lama2
+
     for (i in 1:nrow(gene_xprsn_annotation)){
       current_chromosom <- gene_xprsn_annotation[i,]$chromosome_name
       current_loc <- gene_xprsn_annotation[i,]$start_position
@@ -73,7 +72,7 @@ LocalizedLinearModel<-
       neighbors <- neighbors[order(abs(neighbors$distance)),]
       neighbors <- na.omit(neighbors)
 
-      if(dim(neighbors)[1] >= 3){
+      if(dim(neighbors)[1] >= 2){
         num_neighbours <- nearest_neighbours
         max_neighbours <- dim(neighbors)[1]
         if(max_neighbours < nearest_neighbours){
