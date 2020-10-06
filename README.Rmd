@@ -24,7 +24,7 @@ The goal of DELocal is to ...
 
 ## Installation
 
-You can install the released version of DELocal from [CRAN](https://CRAN.R-project.org) with:
+You can install the released version of DELocal with:
 
 ``` r
 devtools::install_github("dasroy/delocal")
@@ -34,7 +34,7 @@ devtools::install_github("dasroy/delocal")
 
 This is a basic example which shows you how to solve a common problem:
 
-```{r example,echo=FALSE,message=FALSE,warning=FALSE}
+```{r example,message=FALSE,warning=FALSE}
 library(DELocal)
 
 ## basic example code
@@ -56,35 +56,43 @@ ddsHTSeq_count$ensembl_gene_id <- rownames(ddsHTSeq_count)
 ```
 
 ## Getting gene chromosomal location
-```{r echo=FALSE,message=FALSE,warning=FALSE}
+```{r message=FALSE,warning=FALSE}
 gene_location <- read.table(file = system.file("extdata", 
                                               "gene_location.txt", 
                                               package = "DELocal"))
-DT::datatable(gene_location[,c("ensembl_gene_id","start_position","chromosome_name")],rownames = FALSE)
+DT::datatable(gene_location[,c("ensembl_gene_id","start_position","chromosome_name")],
+              rownames = FALSE)
+
+###
+# Example code to generate above table
+###
 # require(biomaRt)
-# gene_attributes<- c("ensembl_gene_id",  "external_gene_name", "start_position", "end_position", "chromosome_name", "gene_biotype")
-# ensembl_ms_mart <- useMart(biomart="ENSEMBL_MART_ENSEMBL", dataset="mmusculus_gene_ensembl", host="www.ensembl.org")
-# gene_location <- getBM(attributes=gene_attributes, mart=ensembl_ms_mart,  verbose = FALSE, values =ddsHTSeq_count$ensembl_gene_id , filters = "ensembl_gene_id")
+# gene_attributes<- c("ensembl_gene_id",  "external_gene_name", "start_position", 
+#                     "end_position", "chromosome_name", "gene_biotype")
+# ensembl_ms_mart <- useMart(biomart="ENSEMBL_MART_ENSEMBL", 
+#                            dataset="mmusculus_gene_ensembl", host="www.ensembl.org")
+# gene_location <- getBM(attributes=gene_attributes, mart=ensembl_ms_mart,  
+#                        verbose = FALSE)
 # rownames(gene_location) <- gene_location$ensembl_gene_id
 ```
 
 
-```{r echo=FALSE,warning=FALSE,error=FALSE}
+```{r message=FALSE,warning=FALSE,error=FALSE}
 smrExpt <- SummarizedExperiment(assays=list(counts=count_matrix),
                      rowData = gene_location, colData=colData)
 
-pDesign <- ~ condition
 contrast= c("condition","ME13","ME14")
-nearest_neighbours <- 5
 
-DELocal_table <- DELocal(smrExpt = smrExpt, contrast = contrast,nearest_neighbours = 5,pDesign = ~ condition,pValue_cut = 0.05, logFold_cut = 0)
+DELocal_result <- DELocal(smrExpt = smrExpt, contrast = contrast,
+                         nearest_neighbours = 5,pDesign = ~ condition,
+                         pValue_cut = 0.05, logFold_cut = 0)
 
-head(DELocal_table)
 ```
 
-## Trying with summerizedexperiment
+
 
 ```{r echo=FALSE,eval=FALSE}
+## Trying with summerizedexperiment
 # need to save gene_location and same number of gene's expression in example data
 dds<-dds[gene_location$ensembl_gene_id,]
 

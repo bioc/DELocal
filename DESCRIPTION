@@ -17,4 +17,5 @@ Imports:
     ROCR,
     dplyr,
     reshape2,
-    limma
+    limma,
+    SummarizedExperiment
