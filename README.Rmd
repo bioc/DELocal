@@ -20,7 +20,7 @@ knitr::opts_chunk$set(
 
 The goal of DELocal is to ...
 
-[!neighbor](Fig_2_solid.svg.png)
+![neighbor](Fig_2_solid.svg.png)
 
 ## Installation
 
@@ -84,7 +84,7 @@ head(DELocal_table)
 
 ## Trying with summerizedexperiment
 
-```{r echo=FALSE}
+```{r echo=FALSE,eval=FALSE}
 # need to save gene_location and same number of gene's expression in example data
 dds<-dds[gene_location$ensembl_gene_id,]
 
