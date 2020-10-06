@@ -1,4 +1,3 @@
-require(gplots)
 
 
 # Returns count data keeping the expression columns at the begining of the data frame.
@@ -52,9 +51,53 @@ newMakeContrastBvsA<-function(residuals, selectA, selectB, pvalue.fdr,adjustPara
   return(contrastBvsA)
 }
 
+#' Finds differentially expressed genes by comparing neighboring genes.
+#'
+#' @param nearest_neighbours
+#' @param smrExpt SummarizedExperiment object
+#' @param contrast
+#'
+#' @return
+#' @export
+#'
+#' @examples
+DELocal<-
+    function(smrExpt,contrast,nearest_neighbours,pDesign,pValue_cut,logFold_cut){
+
+      smrExpt <- DESeqDataSet(smrExpt, design = pDesign)
+      smrExpt <- DESeq2::estimateSizeFactors(smrExpt)
+      assays(smrExpt)$normalized_counts = counts(smrExpt,normalized = TRUE)
+      exp_mat <- as.data.frame(assays(smrExpt)$normalized_counts)
+      sample_names <- colnames(exp_mat)
+
+      exp_mat$ensembl_gene_id = rownames(exp_mat)
+
+      require(dplyr)
+      linear_model <- LocalizedLinearModel(
+        exp_mat %>% left_join(rowData(smrExpt) %>% as.data.frame(), by=c("ensembl_gene_id" ="ensembl_gene_id")),
+        sample_names,
+        nearest_neighbours+1)
+
+      p_selectA <- which(colData(smrExpt)[,contrast[1]]== contrast[2])
+      p_selectB <- which(colData(smrExpt)[,contrast[1]]== contrast[3])
+
+      DELocal_table <-
+        newMakeContrastBvsA(
+          linear_model,
+          selectA = p_selectA,
+          selectB = p_selectB,
+          pvalue.fdr = pValue_cut,
+          adjustPara = "BH",
+          lfc = logFold_cut
+        )
+
+        return(DELocal_table)
+    }
+
 LocalizedLinearModel<-
   function(gene_xprsn_annotation,sample_names,nearest_neighbours){
     require(gtools)
+
 
     gene_xprsn_annotation <- gene_xprsn_annotation[order(gene_xprsn_annotation$chromosome_name,gene_xprsn_annotation$start_position),]
 
@@ -164,7 +207,7 @@ plot_LOCAL_lm<-function(pEnsembl_gene_id, gene_xprsn_annotation,sample_names,nea
 #' @export
 #'
 #' @examples
-DE_Local <-
+optimize_Local <-
   function(exprsn_contr_column,
            pExprsn_Location,
            lfc,
@@ -185,7 +228,7 @@ DE_Local <-
     neighbor_to_evaluate = 2:15
     l <- for (i in neighbor_to_evaluate)  {
       linear_models_list[[i]] <-
-        LocalizedLinearModel(pExprsn_Location[!duplicated(pExprsn_Location$ensembl_gene_id),], colnames(pExprsn_Location)[exprsn_contr_column$exprsn_column], i) # USING only expression from two groups decreases performance considerably
+        LocalizedLinearModel(pExprsn_Location[!duplicated(pExprsn_Location$ensembl_gene_id),], colnames(pExprsn_Location)[exprsn_contr_column$exprsn_column], i)
       DELocal_table <-
         newMakeContrastBvsA(
           linear_models_list[[i]],
@@ -196,8 +239,6 @@ DE_Local <-
           lfc = lfc
         )
 
-
-      # DELocal_table$gene_at <- paste(rownames(DELocal_table), "_at", sep = "")
       DELocal_table$true_genes <- rownames(DELocal_table) %in% true_gene_list
 
       pred_DELocal <-
