@@ -66,20 +66,20 @@ DELocal<-
 
       smrExpt <- DESeq2::DESeqDataSet(smrExpt, design = pDesign)
       smrExpt <- DESeq2::estimateSizeFactors(smrExpt)
-      assays(smrExpt)$normalized_counts = counts(smrExpt,normalized = TRUE)
-      exp_mat <- as.data.frame(assays(smrExpt)$normalized_counts)
+      SummarizedExperiment::assays(smrExpt)$normalized_counts = DESeq2::counts(smrExpt, normalized = TRUE)
+      exp_mat <- as.data.frame(SummarizedExperiment::assays(smrExpt)$normalized_counts)
       sample_names <- colnames(exp_mat)
 
       exp_mat$ensembl_gene_id = rownames(exp_mat)
 
       require(dplyr)
       linear_model <- LocalizedLinearModel(
-        exp_mat %>% left_join(rowData(smrExpt) %>% as.data.frame(), by=c("ensembl_gene_id" ="ensembl_gene_id")),
+        exp_mat %>% left_join(SummarizedExperiment::rowData(smrExpt) %>% as.data.frame(), by=c("ensembl_gene_id" ="ensembl_gene_id")),
         sample_names,
         nearest_neighbours+1)
 
-      p_selectA <- which(colData(smrExpt)[,contrast[1]]== contrast[2])
-      p_selectB <- which(colData(smrExpt)[,contrast[1]]== contrast[3])
+      p_selectA <- which(SummarizedExperiment::colData(smrExpt)[,contrast[1]]== contrast[2])
+      p_selectB <- which(SummarizedExperiment::colData(smrExpt)[,contrast[1]]== contrast[3])
 
       DELocal_table <-
         newMakeContrastBvsA(
