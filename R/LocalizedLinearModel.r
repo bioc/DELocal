@@ -64,7 +64,7 @@ newMakeContrastBvsA<-function(residuals, selectA, selectB, pvalue.fdr,adjustPara
 DELocal<-
     function(smrExpt,contrast,nearest_neighbours,pDesign,pValue_cut,logFold_cut){
 
-      smrExpt <- DESeqDataSet(smrExpt, design = pDesign)
+      smrExpt <- DESeq2::DESeqDataSet(smrExpt, design = pDesign)
       smrExpt <- DESeq2::estimateSizeFactors(smrExpt)
       assays(smrExpt)$normalized_counts = counts(smrExpt,normalized = TRUE)
       exp_mat <- as.data.frame(assays(smrExpt)$normalized_counts)

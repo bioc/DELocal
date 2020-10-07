@@ -18,9 +18,10 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 <!-- badges: end -->
 
-The goal of DELocal is to ...
+The goal of DELocal is to identify DE genes compared to their neighboring genes from chromosomal location.
 
-![neighbor](Fig_2_solid.svg.png)
+![neighbor](Sos.png)
+In the above figure it can be seen that **Sostdc1** is differentially expressed in developing tooth tissues (E13 and E14). __DELocal__ helps in identifying similar genes.
 
 ## Installation
 
@@ -30,57 +31,57 @@ You can install the released version of DELocal with:
 devtools::install_github("dasroy/delocal")
 ```
 
-## Example
+## How to run
 
-This is a basic example which shows you how to solve a common problem:
+This is a basic example which shows you how to use __DELocal__:
+
+First a **SummarizedExperiment** object will be configured with gene expression count matrix and gene location info.
+
+### Read the raw count values  
 
 ```{r example,message=FALSE,warning=FALSE}
 library(DELocal)
-
-## basic example code
 count_matrix <- as.matrix(read.table(file = system.file("extdata", 
                                               "tooth_RNASeq_counts.txt", 
                                               package = "DELocal")))
 colData <- data.frame(condition=gsub("\\..*",x=colnames(count_matrix),replacement = ""))
-
-library(DESeq2)
-dds <- DESeqDataSetFromMatrix(countData = count_matrix,
-                              colData = colData,
-                              design = ~ condition)
-
-dds
-ddsHTSeq_count<-DESeq2::estimateSizeFactors(dds)
-ddsHTSeq_count<-as.data.frame( DESeq2::counts(ddsHTSeq_count,normalized=TRUE))
-
-ddsHTSeq_count$ensembl_gene_id <- rownames(ddsHTSeq_count)
 ```
 
-## Getting gene chromosomal location
+### Getting gene chromosomal location  
+
 ```{r message=FALSE,warning=FALSE}
 gene_location <- read.table(file = system.file("extdata", 
                                               "gene_location.txt", 
                                               package = "DELocal"))
-DT::datatable(gene_location[,c("ensembl_gene_id","start_position","chromosome_name")],
-              rownames = FALSE)
-
-###
-# Example code to generate above table
-###
-# require(biomaRt)
-# gene_attributes<- c("ensembl_gene_id",  "external_gene_name", "start_position", 
-#                     "end_position", "chromosome_name", "gene_biotype")
-# ensembl_ms_mart <- useMart(biomart="ENSEMBL_MART_ENSEMBL", 
-#                            dataset="mmusculus_gene_ensembl", host="www.ensembl.org")
-# gene_location <- getBM(attributes=gene_attributes, mart=ensembl_ms_mart,  
-#                        verbose = FALSE)
-# rownames(gene_location) <- gene_location$ensembl_gene_id
+DT::datatable(gene_location, rownames = FALSE)
 ```
 
 
-```{r message=FALSE,warning=FALSE,error=FALSE}
-smrExpt <- SummarizedExperiment(assays=list(counts=count_matrix),
-                     rowData = gene_location, colData=colData)
+### Example code to get gene location information like above
 
+```{r eval=FALSE}
+require(biomaRt)
+gene_attributes<- c("ensembl_gene_id", "start_position", "chromosome_name")
+ensembl_ms_mart <- useMart(biomart="ENSEMBL_MART_ENSEMBL",
+                           dataset="mmusculus_gene_ensembl", host="www.ensembl.org")
+gene_location <- getBM(attributes=gene_attributes, mart=ensembl_ms_mart,
+                       verbose = FALSE)
+rownames(gene_location) <- gene_location$ensembl_gene_id
+```
+
+
+### Integretting gene expression and location into a single object.
+
+```{r message=FALSE,warning=FALSE,error=FALSE}
+smrExpt <- SummarizedExperiment::SummarizedExperiment(assays=list(counts=count_matrix),
+                                                      rowData = gene_location, 
+                                                      colData=colData)
+smrExpt
+```
+
+## Final results        
+
+```{r message=FALSE,warning=FALSE,error=FALSE}
 contrast= c("condition","ME13","ME14")
 
 DELocal_result <- DELocal(smrExpt = smrExpt, contrast = contrast,
@@ -88,18 +89,3 @@ DELocal_result <- DELocal(smrExpt = smrExpt, contrast = contrast,
                          pValue_cut = 0.05, logFold_cut = 0)
 
 ```
-
-
-
-```{r echo=FALSE,eval=FALSE}
-## Trying with summerizedexperiment
-# need to save gene_location and same number of gene's expression in example data
-dds<-dds[gene_location$ensembl_gene_id,]
-
-dds <- DESeq2::estimateSizeFactors(dds)
-
-rowData(dds) <- gene_location
-assays(dds)$normalized_counts = counts(dds,normalized = TRUE)
-
-```
-
