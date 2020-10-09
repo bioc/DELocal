@@ -1,13 +1,13 @@
 Package: DELocal
 Title: Identifies differentially expressed genes with respect to other local genes.
-Version: 0.0.0.9011
+Version: 0.0.0.9012
 Authors@R: 
     person(given = "Rishi",
            family = "Das Roy",
            role = c("aut", "cre"),
            email = "rishi.dasroy@helsinki.fi",
            comment = c(ORCID = "https://orcid.org/0000-0002-3276-7279"))
-Description: What the package does (one paragraph).
+Description: Identifies differentially expressed genes with respect to other local genes.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true

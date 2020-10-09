@@ -84,10 +84,16 @@ smrExpt
 
 ## Final results        
 
+These may take long time to run the whole data therefore here we will analyse gene from only X chromosome.
 ```{r message=FALSE,warning=FALSE,error=FALSE}
 contrast= c("condition","ME13","ME14")
 
-DELocal_result <- DELocal(smrExpt = smrExpt, contrast = contrast,
+require(dplyr)
+x_genes <- SummarizedExperiment::rowData(smrExpt) %>% 
+    as.data.frame() %>% 
+    filter(chromosome_name=="X") %>% rownames() 
+
+DELocal_result <- DELocal(smrExpt = smrExpt[x_genes,], contrast = contrast,
                          nearest_neighbours = 5,pDesign = ~ condition,
                          pValue_cut = 0.05, logFold_cut = 0)
 

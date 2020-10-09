@@ -19,6 +19,9 @@ is differentially expressed in developing tooth tissues (E13 and E14).
 You can install the released version of DELocal with:
 
 ``` r
+if (!requireNamespace("devtools")) {
+  install.packages("devtools")
+}
 devtools::install_github("dasroy/delocal")
 ```
 
@@ -82,10 +85,18 @@ smrExpt
 
 ## Final results
 
+These may take long time to run the whole data therefore here we will
+analyse gene from only X chromosome.
+
 ``` r
 contrast= c("condition","ME13","ME14")
 
-DELocal_result <- DELocal(smrExpt = smrExpt, contrast = contrast,
+require(dplyr)
+x_genes <- SummarizedExperiment::rowData(smrExpt) %>% 
+    as.data.frame() %>% 
+    filter(chromosome_name=="X") %>% rownames() 
+
+DELocal_result <- DELocal(smrExpt = smrExpt[x_genes,], contrast = contrast,
                          nearest_neighbours = 5,pDesign = ~ condition,
                          pValue_cut = 0.05, logFold_cut = 0)
 ```
