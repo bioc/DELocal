@@ -60,12 +60,12 @@ require(biomaRt)
 gene_attributes<- c("ensembl_gene_id", "start_position", "chromosome_name")
 ensembl_ms_mart <- useMart(biomart="ENSEMBL_MART_ENSEMBL",
                            dataset="mmusculus_gene_ensembl", host="www.ensembl.org")
-gene_location <- getBM(attributes=gene_attributes, mart=ensembl_ms_mart,
+gene_location_sample <- getBM(attributes=gene_attributes, mart=ensembl_ms_mart,
                        verbose = FALSE)
-rownames(gene_location) <- gene_location$ensembl_gene_id
+rownames(gene_location_sample) <- gene_location_sample$ensembl_gene_id
 ```
 
-### Integretting gene expression and location into a single object.
+### Integrating gene expression and location into a single object.
 
 ``` r
 smrExpt <- SummarizedExperiment::SummarizedExperiment(assays=list(counts=count_matrix),
@@ -86,7 +86,7 @@ smrExpt
 ## Final results
 
 These may take long time to run the whole data therefore here we will
-analyse gene from only X chromosome.
+analyse genes only from X chromosome.
 
 ``` r
 contrast= c("condition","ME13","ME14")
