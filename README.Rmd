@@ -28,6 +28,9 @@ In the above figure it can be seen that **Sostdc1** is differentially expressed 
 You can install the released version of DELocal with:
 
 ``` r
+if (!requireNamespace("devtools")) {
+  install.packages("devtools")
+}
 devtools::install_github("dasroy/delocal")
 ```
 

@@ -4,13 +4,24 @@
 \alias{DELocal}
 \title{Finds differentially expressed genes by comparing neighboring genes.}
 \usage{
-DELocal(gene_xprsn_annotation, sample_names, nearest_neighbours)
+DELocal(
+  smrExpt,
+  contrast,
+  nearest_neighbours,
+  pDesign,
+  pValue_cut,
+  logFold_cut
+)
 }
 \arguments{
-\item{nearest_neighbours}{}
+\item{smrExpt}{SummarizedExperiment object}
+
+\item{contrast}{Same as DeSeq2}
+
+\item{nearest_neighbours}{How many nearest neighbours within 1 Mb window to evaluate?}
 }
 \value{
-
+A result table
 }
 \description{
 Finds differentially expressed genes by comparing neighboring genes.

@@ -53,11 +53,11 @@ newMakeContrastBvsA<-function(residuals, selectA, selectB, pvalue.fdr,adjustPara
 
 #' Finds differentially expressed genes by comparing neighboring genes.
 #'
-#' @param nearest_neighbours
+#' @param nearest_neighbours How many nearest neighbours within 1 Mb window to evaluate?
 #' @param smrExpt SummarizedExperiment object
-#' @param contrast
+#' @param contrast Same as DeSeq2
 #'
-#' @return
+#' @return A result table
 #' @export
 #'
 #' @examples
