@@ -63,6 +63,11 @@ newMakeContrastBvsA<-function(residuals, selectA, selectB, pvalue.fdr,adjustPara
 #' @examples
 DELocal<-
     function(smrExpt,contrast,nearest_neighbours,pDesign,pValue_cut,logFold_cut){
+     if( "neighbors_start" %in% (SummarizedExperiment::rowData(smrExpt) %>% colnames() )){
+       print("User provided neighborhood will be used")
+     } else {
+         print("Default 1Mb neighborhood will be used")
+       }
 
       smrExpt <- DESeq2::DESeqDataSet(smrExpt, design = pDesign)
       smrExpt <- DESeq2::estimateSizeFactors(smrExpt)
@@ -98,19 +103,28 @@ LocalizedLinearModel<-
   function(gene_xprsn_annotation,sample_names,nearest_neighbours){
     require(gtools)
 
-
     gene_xprsn_annotation <- gene_xprsn_annotation[order(gene_xprsn_annotation$chromosome_name,gene_xprsn_annotation$start_position),]
 
     linear_models <-  data.frame(matrix(vector(), 0,length(sample_names), dimnames=list(c(), sample_names)), stringsAsFactors=F)
 
     for (i in 1:nrow(gene_xprsn_annotation)){
       current_chromosom <- gene_xprsn_annotation[i,]$chromosome_name
-      current_loc <- gene_xprsn_annotation[i,]$start_position
       current_ensembl_gene_id <- gene_xprsn_annotation[i,]$ensembl_gene_id
 
-      neighbors <- gene_xprsn_annotation[ gene_xprsn_annotation$chromosome_name ==current_chromosom
-                                          & abs(gene_xprsn_annotation$start_position - current_loc)< 500000,]
-
+      if ("neighbors_start" %in% colnames(gene_xprsn_annotation)) {
+        current_neighbors_start <- gene_xprsn_annotation[i,]$neighbors_start
+        current_neighbors_end <- gene_xprsn_annotation[i,]$neighbors_end
+        neighbors <- gene_xprsn_annotation %>% dplyr::filter(
+            chromosome_name == current_chromosom &
+            start_position >= current_neighbors_start  &
+            start_position <= current_neighbors_end
+        )
+      } else{
+        current_loc <- gene_xprsn_annotation[i,]$start_position
+        neighbors <-
+          gene_xprsn_annotation[gene_xprsn_annotation$chromosome_name == current_chromosom
+                                & abs(gene_xprsn_annotation$start_position - current_loc) < 500000, ]
+      }
       neighbors$distance <- neighbors$start_position - gene_xprsn_annotation[i,]$start_position
       neighbors <- neighbors[order(abs(neighbors$distance)),]
       neighbors <- na.omit(neighbors)
@@ -149,12 +163,24 @@ plot_LOCAL_lm<-function(pEnsembl_gene_id, gene_xprsn_annotation,sample_names,nea
   gene_xprsn_annotation <- gene_xprsn_annotation[order(gene_xprsn_annotation$chromosome_name,gene_xprsn_annotation$start_position),]
 
   i <- which(pEnsembl_gene_id==gene_xprsn_annotation$ensembl_gene_id)
+
   current_chromosom <- gene_xprsn_annotation[i,]$chromosome_name
-  current_loc <- gene_xprsn_annotation[i,]$start_position
   current_ensembl_gene_id <- gene_xprsn_annotation[i,]$ensembl_gene_id
 
-  neighbors <- gene_xprsn_annotation[ gene_xprsn_annotation$chromosome_name ==current_chromosom
-                                      & abs(gene_xprsn_annotation$start_position - current_loc)< 500000,]
+  if ("neighbors_start" %in% colnames(gene_xprsn_annotation)) {
+    current_neighbors_start <- gene_xprsn_annotation[i,]$neighbors_start
+    current_neighbors_end <- gene_xprsn_annotation[i,]$neighbors_end
+    neighbors <- gene_xprsn_annotation %>% dplyr::filter(
+      chromosome_name == current_chromosom &
+        start_position >= current_neighbors_start  &
+        start_position <= current_neighbors_end
+    )
+  } else{
+    current_loc <- gene_xprsn_annotation[i,]$start_position
+    neighbors <-
+      gene_xprsn_annotation[gene_xprsn_annotation$chromosome_name == current_chromosom
+                            & abs(gene_xprsn_annotation$start_position - current_loc) < 500000, ]
+  }
 
   neighbors$distance <- neighbors$start_position - gene_xprsn_annotation[i,]$start_position
   neighbors <- neighbors[order(abs(neighbors$distance)),]
@@ -213,6 +239,13 @@ optimize_Local <-
            lfc,
            p_value,
            true_gene_list) {
+
+
+     if( "neighbors_start" %in% (pExprsn_Location %>% colnames() )){
+       print("User provided neighborhood will be used")
+     } else {
+         print("Default 1Mb neighborhood will be used")
+     }
     results <- list()
     linear_models_list <- list()
     new_tune_neighbour <-
@@ -362,45 +395,52 @@ roc_from_topGenes <- function(top_genes,Methods_list) {
 #' @examples
 compare_methods <- function(Methods_list){
   results <- list()
-  Method_compare <- data.frame(roc_auc = numeric(), method  = character())
+  Method_compare <- data.frame(auc = numeric(), method  = character(), curve  = character())
   pred_limma <- prediction(abs(Methods_list$limma$logFC), Methods_list$limma$tooth_genes)
   results$roc.perf = performance(pred_limma, measure = "tpr", x.measure = "fpr")
   roc_auc<-performance(pred_limma,"auc")@y.values[[1]]
 
-  Method_compare <- rbind(Method_compare, data.frame(roc_auc = roc_auc, method = "limma"))
+  Method_compare <- rbind(Method_compare, data.frame(auc = roc_auc, method = "limma", curve="ROC"))
 
 
   pred_DELocal <- prediction(abs(Methods_list$DELocal$logFC), Methods_list$DELocal$tooth_genes)
   results$roc.perf_delocal = performance(pred_DELocal, measure = "tpr", x.measure = "fpr")
   roc_auc<-performance(pred_DELocal,"auc")@y.values[[1]]
 
-  Method_compare <- rbind(Method_compare, data.frame(roc_auc = roc_auc, method = "DELocal"))
+  Method_compare <- rbind(Method_compare, data.frame(auc = roc_auc, method = "DELocal", curve="ROC"))
 
+  ###TAD
+  pred_DELocal_TAD <- prediction(abs(Methods_list$DELocal_TAD$logFC), Methods_list$DELocal_TAD$tooth_genes)
+  results$roc.perf_delocal_TAD = performance(pred_DELocal_TAD, measure = "tpr", x.measure = "fpr")
+  roc_auc<-performance(pred_DELocal_TAD,"auc")@y.values[[1]]
+
+  Method_compare <- rbind(Method_compare, data.frame(auc = roc_auc, method = "DELocal_TAD", curve="ROC"))
+  ###TAD
 
   #use logFC and check
   pred_RProd <- prediction(1-Methods_list$RP$pfp,Methods_list$RP$tooth_genes)
   results$roc.perf_RProd = performance(pred_RProd, measure = "tpr", x.measure = "fpr")
   roc_auc<-performance(pred_RProd,"auc")@y.values[[1]]
 
-  Method_compare <- rbind(Method_compare, data.frame(roc_auc = roc_auc, method = "RankProd"))
+  Method_compare <- rbind(Method_compare, data.frame(auc = roc_auc, method = "RankProd", curve="ROC"))
 
   pred_SAM <- prediction(abs(Methods_list$SAM[ Methods_list$SAM$Q.value < 0.05,]$Score),Methods_list$SAM[ Methods_list$SAM$Q.value < 0.05,]$tooth_genes)
   results$roc.perf_SAM = performance(pred_SAM, measure = "tpr", x.measure = "fpr")
   roc_auc<-performance(pred_SAM,"auc")@y.values[[1]]
 
-  Method_compare <- rbind(Method_compare, data.frame(roc_auc = roc_auc, method = "SAM"))
+  Method_compare <- rbind(Method_compare, data.frame(auc = roc_auc, method = "SAM", curve="ROC"))
 
   pred_FCros <- prediction(abs(Methods_list$FCros[ Methods_list$FCros$p.value < 0.05,]$roc_f.value),Methods_list$FCros[ Methods_list$FCros$p.value < 0.05,]$tooth_genes)
   results$roc.perf_FCros = performance(pred_FCros, measure = "tpr", x.measure = "fpr")
   roc_auc<-performance(pred_FCros,"auc")@y.values[[1]]
 
-  Method_compare <- rbind(Method_compare, data.frame(roc_auc = roc_auc, method = "FCros"))
+  Method_compare <- rbind(Method_compare, data.frame(auc = roc_auc, method = "FCros", curve="ROC"))
 
   pred_Demi <- prediction((1-Methods_list$Demi$P.value),Methods_list$Demi$tooth_genes)
   results$roc.perf_Demi = performance(pred_Demi, measure = "tpr", x.measure = "fpr")
   roc_auc<-performance(pred_Demi,"auc")@y.values[[1]]
 
-  Method_compare <- rbind(Method_compare, data.frame(roc_auc = roc_auc, method = "Demi"))
+  Method_compare <- rbind(Method_compare, data.frame(auc = roc_auc, method = "Demi", curve="ROC"))
 
   results$Method_compare <- Method_compare
   results
@@ -416,32 +456,58 @@ compare_methods <- function(Methods_list){
 #' @examples
 compare_methods_best <- function(Methods_list){
   results <- list()
-  Method_compare <- data.frame(roc_auc = numeric(), method  = character())
+  Method_compare <- data.frame(auc = numeric(), method  = character(), curve  = character())
 
   pred_limma <- prediction(1-(Methods_list$limma$adj.P.Val), Methods_list$limma$tooth_genes)
   results$roc.perf = performance(pred_limma, measure = "tpr", x.measure = "fpr")
   roc_auc<-performance(pred_limma,"auc")@y.values[[1]]
 
-  Method_compare <- rbind(Method_compare, data.frame(roc_auc = roc_auc, method = "limma"))
+  Method_compare <- rbind(Method_compare, data.frame(auc = roc_auc, method = "limma", curve="ROC"))
+
+  results$pr_perf <- performance(pred_limma, "prec", "rec")
+  pr_auc<-performance(pred_limma,"aucpr")@y.values[[1]]
+  Method_compare <- rbind(Method_compare, data.frame(auc = pr_auc, method = "limma", curve="Precision/Recall"))
 
   pred_DELocal <- prediction(abs(Methods_list$DELocal$logFC), Methods_list$DELocal$tooth_genes)
   results$roc.perf_delocal = performance(pred_DELocal, measure = "tpr", x.measure = "fpr")
   roc_auc<-performance(pred_DELocal,"auc")@y.values[[1]]
 
-  Method_compare <- rbind(Method_compare, data.frame(roc_auc = roc_auc, method = "DELocal"))
+  Method_compare <- rbind(Method_compare, data.frame(auc = roc_auc, method = "DELocal", curve="ROC"))
+
+  results$pr_perf_delocal <- performance(pred_DELocal, "prec", "rec")
+  pr_auc<-performance(pred_DELocal,"aucpr")@y.values[[1]]
+  Method_compare <- rbind(Method_compare, data.frame(auc = pr_auc, method = "DELocal", curve="Precision/Recall"))
+  ### TAD
+  pred_DELocal_TAD <- prediction(abs(Methods_list$DELocal_TAD$logFC), Methods_list$DELocal_TAD$tooth_genes)
+  results$roc.perf_delocal_TAD = performance(pred_DELocal, measure = "tpr", x.measure = "fpr")
+  roc_auc<-performance(pred_DELocal_TAD,"auc")@y.values[[1]]
+
+  Method_compare <- rbind(Method_compare, data.frame(auc = roc_auc, method = "DELocal_TAD", curve="ROC"))
+
+  results$pr_perf_delocal_TAD <- performance(pred_DELocal_TAD, "prec", "rec")
+  pr_auc<-performance(pred_DELocal_TAD,"aucpr")@y.values[[1]]
+  Method_compare <- rbind(Method_compare, data.frame(auc = pr_auc, method = "DELocal_TAD", curve="Precision/Recall"))
+  ### TAD
 
   pred_edgeR <- prediction(1-(Methods_list$edgeR$FDR), Methods_list$edgeR$tooth_genes)
   results$roc.perf_edgeR = performance(pred_edgeR, measure = "tpr", x.measure = "fpr")
   roc_auc<-performance(pred_edgeR,"auc")@y.values[[1]]
 
-  Method_compare <- rbind(Method_compare, data.frame(roc_auc = roc_auc, method = "edgeR"))
+  Method_compare <- rbind(Method_compare, data.frame(auc = roc_auc, method = "edgeR", curve="ROC"))
+
+  results$pr_perf_edgeR <- performance(pred_edgeR, "prec", "rec")
+  pr_auc<-performance(pred_edgeR,"aucpr")@y.values[[1]]
+  Method_compare <- rbind(Method_compare, data.frame(auc = pr_auc, method = "edgeR", curve="Precision/Recall"))
 
   pred_DEseq <- prediction(1-(Methods_list$DEseq$padj), Methods_list$DEseq$tooth_genes)
   results$roc.perf_DEseq = performance(pred_DEseq, measure = "tpr", x.measure = "fpr")
   roc_auc<-performance(pred_DEseq,"auc")@y.values[[1]]
 
-  Method_compare <- rbind(Method_compare, data.frame(roc_auc = roc_auc, method = "DEseq"))
+  Method_compare <- rbind(Method_compare, data.frame(auc = roc_auc, method = "DEseq", curve="ROC"))
 
+  results$pr_perf_DEseq <- performance(pred_DEseq, "prec", "rec")
+  pr_auc<-performance(pred_DEseq,"aucpr")@y.values[[1]]
+  Method_compare <- rbind(Method_compare, data.frame(auc = pr_auc, method = "DEseq", curve="Precision/Recall"))
 
   results$Method_compare <- Method_compare
   results
@@ -462,13 +528,29 @@ rnaSeq_rank <- function(Methods_list,top_gene){
   Methods_list$DEseq <- Methods_list$DEseq[ order(Methods_list$DEseq$padj),]
   Methods_list$edgeR <- Methods_list$edgeR[ order(Methods_list$edgeR$FDR),]
   Methods_list$DELocal <- Methods_list$DELocal[ order(-abs(Methods_list$DELocal$logFC)),]
+  Methods_list$DELocal_TAD <- Methods_list$DELocal_TAD[ order(-abs(Methods_list$DELocal_TAD$logFC)),]
 
-  method_rank <- data.frame (
-    DELocal = which( Methods_list$DELocal$tooth_genes == TRUE)[1:top_gene] ,
-    limma = which( Methods_list$limma$tooth_genes == TRUE)[1:top_gene],
-    DEseq = which( Methods_list$DEseq$tooth_genes == TRUE )[1:top_gene],
-    edgeR = which( Methods_list$edgeR$tooth_genes == TRUE)[1:top_gene]
-  )
+  # method_rank <- data.frame (
+  #   DEseq = which( Methods_list$DEseq$tooth_genes == TRUE )[1:top_gene],
+  #   DELocal = which( Methods_list$DELocal$tooth_genes == TRUE)[1:top_gene] ,
+  #   DELocal_TAD = which( Methods_list$DELocal_TAD$tooth_genes == TRUE)[1:top_gene] ,
+  #   limma = which( Methods_list$limma$tooth_genes == TRUE)[1:top_gene],
+  #   edgeR = which( Methods_list$edgeR$tooth_genes == TRUE)[1:top_gene]
+  # )
+
+  makeRank <- function(result){
+    result %>%
+      mutate(rank = 1:n()) %>%
+      dplyr::filter(tooth_genes==TRUE) %>%
+      mutate(sequence_rank = 1:n()) %>%
+      dplyr::select(ensembl_gene_id,rank,sequence_rank)
+  }
+  tables <- lapply(Methods_list, makeRank)
+
+  combined_r <- do.call(rbind , tables)
+
+  combined_r$method <- rownames(combined_r) %>% stringr::str_extract(pattern = "[a-zA-Z_]*")
+  return(combined_r)
 }
 
 #' Title
@@ -612,9 +694,23 @@ GO_neighbourAnalysis<-
 
 getNiegbours <- function(xprsn,gene_name){
   xprsn <- xprsn[order(xprsn$chromosome_name,xprsn$start_position),]
-  current_chromosom <- xprsn[ xprsn$mgi_symbol == gene_name,]$chromosome_name
-  current_loc <- xprsn[xprsn$mgi_symbol == gene_name,]$start_position
-  neighbors <- xprsn[ xprsn$chromosome_name ==current_chromosom & abs(xprsn$start_position -current_loc)< 500000,]
+  current_chromosom <- xprsn[i,]$chromosome_name
+  current_ensembl_gene_id <- xprsn[i,]$ensembl_gene_id
+
+  if ("neighbors_start" %in% colnames(xprsn)) {
+    current_neighbors_start <- xprsn[i,]$neighbors_start
+    current_neighbors_end <- xprsn[i,]$neighbors_end
+    neighbors <- xprsn %>% dplyr::filter(
+      chromosome_name == current_chromosom &
+        start_position >= current_neighbors_start  &
+        start_position <= current_neighbors_end
+    )
+  } else{
+    current_loc <- xprsn[i,]$start_position
+    neighbors <- xprsn[xprsn$chromosome_name == current_chromosom
+                       & abs(xprsn$start_position - current_loc) < 500000, ]
+  }
+
   return(neighbors)
 }
 

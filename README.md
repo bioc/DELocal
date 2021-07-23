@@ -51,6 +51,9 @@ gene_location <- read.table(file = system.file("extdata",
                                               "gene_location.txt", 
                                               package = "DELocal"))
 DT::datatable(gene_location, rownames = FALSE)
+#> QStandardPaths: XDG_RUNTIME_DIR not set, defaulting to '/tmp/runtime-dasroy'
+#> TypeError: Attempting to change the setter of an unconfigurable property.
+#> TypeError: Attempting to change the setter of an unconfigurable property.
 ```
 
 <img src="man/figures/README-unnamed-chunk-2-1.png" width="100%" />
@@ -99,6 +102,34 @@ x_genes <- SummarizedExperiment::rowData(smrExpt) %>%
     filter(chromosome_name=="X") %>% rownames() 
 
 DELocal_result <- DELocal(smrExpt = smrExpt[x_genes,], contrast = contrast,
+                         nearest_neighbours = 5,pDesign = ~ condition,
+                         pValue_cut = 0.05, logFold_cut = 0)
+```
+
+### Dynamic neighbour
+
+Here TAD domain boundaries will be used as dynamic boundaries
+
+``` r
+TADKB <- readRDS("../DELocal_manuscript/markdowns/Mouse_TAD_boundaries.rds")
+gene_location_dynamicNeighbourhood <- TADKB %>% dplyr::select(ensembl_gene_id, start_position, chromosome_name,startTAD   ,endTAD) %>% unique()
+rownames(gene_location_dynamicNeighbourhood) <- gene_location_dynamicNeighbourhood$ensembl_gene_id
+
+# rename the columns as required by DELocal
+colnames(gene_location_dynamicNeighbourhood)[4:5] <- c("neighbors_start","neighbors_end")
+
+smrExpt_dynamicNeighbour <-
+    SummarizedExperiment::SummarizedExperiment(
+        assays = list(counts = count_matrix),
+        rowData = gene_location_dynamicNeighbourhood[rownames(count_matrix), ],
+        colData = colData
+    )
+                                                      
+one_genes <- SummarizedExperiment::rowData(smrExpt_dynamicNeighbour) %>% 
+    as.data.frame() %>% 
+    filter(chromosome_name=="1") %>% rownames() 
+
+DELocal_result <- DELocal(smrExpt = smrExpt_dynamicNeighbour[one_genes,], contrast = contrast,
                          nearest_neighbours = 5,pDesign = ~ condition,
                          pValue_cut = 0.05, logFold_cut = 0)
 ```
