@@ -540,9 +540,9 @@ rnaSeq_rank <- function(Methods_list,top_gene){
 
   makeRank <- function(result){
     result %>%
-      mutate(rank = 1:n()) %>%
+      dplyr::mutate(rank = 1:n()) %>%
       dplyr::filter(tooth_genes==TRUE) %>%
-      mutate(sequence_rank = 1:n()) %>%
+      dplyr::mutate(sequence_rank = 1:n()) %>%
       dplyr::select(ensembl_gene_id,rank,sequence_rank)
   }
   tables <- lapply(Methods_list, makeRank)

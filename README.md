@@ -46,12 +46,13 @@ colData <- data.frame(condition=gsub("\\..*",x=colnames(count_matrix),replacemen
 
 ### Getting gene chromosomal location
 
+Example of required gene location information
+
 ``` r
 gene_location <- read.table(file = system.file("extdata", 
                                               "gene_location.txt", 
                                               package = "DELocal"))
-DT::datatable(gene_location, rownames = FALSE)
-#> QStandardPaths: XDG_RUNTIME_DIR not set, defaulting to '/tmp/runtime-dasroy'
+DT::datatable(head(gene_location), rownames = FALSE)
 #> TypeError: Attempting to change the setter of an unconfigurable property.
 #> TypeError: Attempting to change the setter of an unconfigurable property.
 ```

@@ -1,5 +1,6 @@
 ---
 output: github_document
+--metadata: pagetitle="Readme"
 ---
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
@@ -52,11 +53,13 @@ colData <- data.frame(condition=gsub("\\..*",x=colnames(count_matrix),replacemen
 
 ### Getting gene chromosomal location  
 
+Example of required gene location information  
+
 ```{r message=FALSE,warning=FALSE}
 gene_location <- read.table(file = system.file("extdata", 
                                               "gene_location.txt", 
                                               package = "DELocal"))
-DT::datatable(gene_location, rownames = FALSE)
+DT::datatable(head(gene_location), rownames = FALSE)
 ```
 
 
