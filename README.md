@@ -53,11 +53,8 @@ gene_location <- read.table(file = system.file("extdata",
                                               "gene_location.txt", 
                                               package = "DELocal"))
 DT::datatable(head(gene_location), rownames = FALSE)
-#> TypeError: Attempting to change the setter of an unconfigurable property.
-#> TypeError: Attempting to change the setter of an unconfigurable property.
 ```
 
-<img src="man/figures/README-unnamed-chunk-2-1.png" width="100%" />
 
 ### Example code to get gene location information like above
 
