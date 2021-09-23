@@ -3,6 +3,13 @@
 
 # DELocal
 
+### Citation:
+
+Das Roy R, Hallikas O, Christensen MM, Renvoisé E, Jernvall J (2021)
+Chromosomal neighbourhoods allow identification of organ specific
+changes in gene expression. PLoS Comput Biol 17(9): e1008947.
+<https://doi.org/10.1371/journal.pcbi.1008947>
+
 <!-- badges: start -->
 
 <!-- badges: end -->
@@ -52,9 +59,15 @@ Example of required gene location information
 gene_location <- read.table(file = system.file("extdata", 
                                               "gene_location.txt", 
                                               package = "DELocal"))
-DT::datatable(head(gene_location), rownames = FALSE)
+head(gene_location)
+#>                       ensembl_gene_id start_position chromosome_name
+#> ENSMUSG00000000001 ENSMUSG00000000001      108107280               3
+#> ENSMUSG00000000003 ENSMUSG00000000003       77837901               X
+#> ENSMUSG00000000028 ENSMUSG00000000028       18780447              16
+#> ENSMUSG00000000031 ENSMUSG00000000031      142575529               7
+#> ENSMUSG00000000037 ENSMUSG00000000037      161082525               X
+#> ENSMUSG00000000049 ENSMUSG00000000049      108343354              11
 ```
-
 
 ### Example code to get gene location information like above
 
@@ -102,6 +115,7 @@ x_genes <- SummarizedExperiment::rowData(smrExpt) %>%
 DELocal_result <- DELocal(smrExpt = smrExpt[x_genes,], contrast = contrast,
                          nearest_neighbours = 5,pDesign = ~ condition,
                          pValue_cut = 0.05, logFold_cut = 0)
+#> [1] "Default 1Mb neighborhood will be used"
 ```
 
 ### Dynamic neighbour
