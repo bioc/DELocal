@@ -14,9 +14,8 @@ changes in gene expression. PLoS Comput Biol 17(9): e1008947.
 
 <!-- badges: end -->
 
-The goal of
-[DELocal](https://www.biorxiv.org/content/10.1101/2020.11.20.390930v1.full)
-is to identify DE genes compared to their neighboring genes from
+The goal of [DELocal](https://doi.org/10.1371/journal.pcbi.1008947) is
+to identify DE genes compared to their neighboring genes from
 chromosomal location.
 
 ![neighbor](Sos.png) In the above figure it can be seen that **Sostdc1**
