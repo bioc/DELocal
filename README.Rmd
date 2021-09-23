@@ -16,6 +16,9 @@ knitr::opts_chunk$set(
 
 # DELocal
 
+## Citation: 
+Das Roy R, Hallikas O, Christensen MM, Renvoisé E, Jernvall J (2021) Chromosomal neighbourhoods allow identification of organ specific changes in gene expression. PLoS Comput Biol 17(9): e1008947. https://doi.org/10.1371/journal.pcbi.1008947
+
 <!-- badges: start -->
 <!-- badges: end -->
 
