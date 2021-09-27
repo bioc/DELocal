@@ -21,19 +21,6 @@ getCountsFromDESeqData <-function(ddsHTSeq,isNormalized,exprsnColPattern,geneAnn
                      grep(exprsnColPattern, colnames(ddsHTSeq_count), invert = TRUE))]
 }
 
-#' Title
-#'
-#' @param residuals
-#' @param selectA
-#' @param selectB
-#' @param pvalue.fdr
-#' @param adjustPara
-#' @param lfc
-#'
-#' @return
-#' @export
-#'
-#' @examples
 newMakeContrastBvsA<-function(residuals, selectA, selectB, pvalue.fdr,adjustPara,lfc)
 {
   require(limma)
@@ -51,40 +38,30 @@ newMakeContrastBvsA<-function(residuals, selectA, selectB, pvalue.fdr,adjustPara
   return(contrastBvsA)
 }
 
-#' Finds differentially expressed genes by comparing neighboring genes.
-#'
-#' @param nearest_neighbours How many nearest neighbours within 1 Mb window to evaluate?
-#' @param smrExpt SummarizedExperiment object
-#' @param contrast Same as DeSeq2
-#'
-#' @return A result table
-#' @export
-#'
-#' @examples
-DELocal<-
-    function(smrExpt,contrast,nearest_neighbours,pDesign,pValue_cut,logFold_cut){
-     if( "neighbors_start" %in% (SummarizedExperiment::rowData(smrExpt) %>% colnames() )){
+DELocal_old<-
+    function(pSmrExpt,contrast,nearest_neighbours,pDesign,pValue_cut,logFold_cut){
+     if( "neighbors_start" %in% (SummarizedExperiment::rowData(pSmrExpt) %>% colnames() )){
        print("User provided neighborhood will be used")
      } else {
          print("Default 1Mb neighborhood will be used")
        }
 
-      smrExpt <- DESeq2::DESeqDataSet(smrExpt, design = pDesign)
-      smrExpt <- DESeq2::estimateSizeFactors(smrExpt)
-      SummarizedExperiment::assays(smrExpt)$normalized_counts = DESeq2::counts(smrExpt, normalized = TRUE)
-      exp_mat <- as.data.frame(SummarizedExperiment::assays(smrExpt)$normalized_counts)
+      pSmrExpt <- DESeq2::DESeqDataSet(pSmrExpt, design = pDesign)
+      pSmrExpt <- DESeq2::estimateSizeFactors(pSmrExpt)
+      SummarizedExperiment::assays(pSmrExpt)$normalized_counts = DESeq2::counts(pSmrExpt, normalized = TRUE)
+      exp_mat <- as.data.frame(SummarizedExperiment::assays(pSmrExpt)$normalized_counts)
       sample_names <- colnames(exp_mat)
 
       exp_mat$ensembl_gene_id = rownames(exp_mat)
 
       require(dplyr)
       linear_model <- LocalizedLinearModel(
-        exp_mat %>% left_join(SummarizedExperiment::rowData(smrExpt) %>% as.data.frame(), by=c("ensembl_gene_id" ="ensembl_gene_id")),
+        exp_mat %>% left_join(SummarizedExperiment::rowData(pSmrExpt) %>% as.data.frame(), by=c("ensembl_gene_id" ="ensembl_gene_id")),
         sample_names,
         nearest_neighbours+1)
 
-      p_selectA <- which(SummarizedExperiment::colData(smrExpt)[,contrast[1]]== contrast[2])
-      p_selectB <- which(SummarizedExperiment::colData(smrExpt)[,contrast[1]]== contrast[3])
+      p_selectA <- which(SummarizedExperiment::colData(pSmrExpt)[,contrast[1]]== contrast[2])
+      p_selectB <- which(SummarizedExperiment::colData(pSmrExpt)[,contrast[1]]== contrast[3])
 
       DELocal_table <-
         newMakeContrastBvsA(
@@ -98,6 +75,69 @@ DELocal<-
 
         return(DELocal_table)
     }
+
+
+#' Finds differentially expressed genes by comparing neighboring genes.
+#'
+#' @param nearest_neighbours How many nearest neighbours within 1 Mb window to evaluate?
+#' @param pSmrExpt SummarizedExperiment object
+#' @param contrast Same as DeSeq2
+#'
+#' @return A result table
+#' @export
+#'
+#' @examples
+DELocal<-
+  function(pSmrExpt,nearest_neighbours,pDesign,pValue_cut,pLogFold_cut){
+    if( "neighbors_start" %in% (SummarizedExperiment::rowData(pSmrExpt) %>% colnames() )){
+      print("User provided neighborhood will be used")
+    } else {
+      print("Default 1Mb neighborhood will be used")
+    }
+
+    pSmrExpt <- DESeq2::DESeqDataSet(pSmrExpt, design = pDesign)
+    pSmrExpt <- DESeq2::estimateSizeFactors(pSmrExpt)
+    SummarizedExperiment::assays(pSmrExpt)$normalized_counts = DESeq2::counts(pSmrExpt, normalized = TRUE)
+    exp_mat <- as.data.frame(SummarizedExperiment::assays(pSmrExpt)$normalized_counts)
+    sample_names <- colnames(exp_mat)
+
+    exp_mat$ensembl_gene_id = rownames(exp_mat)
+
+    require(dplyr)
+    linear_model <- LocalizedLinearModel(
+      exp_mat %>% left_join(
+        SummarizedExperiment::rowData(pSmrExpt) %>% as.data.frame(),
+        by = c("ensembl_gene_id" = "ensembl_gene_id")
+      ),
+      sample_names,
+      nearest_neighbours + 1
+    )
+
+    design_matrix <- model.matrix(pDesign,SummarizedExperiment::colData(pSmrExpt))
+    DELocal_table <- DELocal_topTable(pLinear_model = linear_model, pDesign_matrix = design_matrix,
+                                      pLogFold_cut = pLogFold_cut,pValue_cut = pValue_cut)
+    return(DELocal_table)
+  }
+
+#' Title
+#'
+#' @param pLinear_model
+#' @param pDesign_matrix
+#' @param pLogFold_cut
+#' @param pValue_cut
+#'
+#' @return
+#' @export
+#'
+#' @examples
+DELocal_topTable <- function(pLinear_model,pDesign_matrix,pLogFold_cut,pValue_cut) {
+    fit<-lmFit(pLinear_model,pDesign_matrix)
+    fit2 <- contrasts.fit(fit, coefficients = ncol(pDesign_matrix))
+    fit3<-eBayes(fit2)
+    top<-topTable(fit3,adjust="BH",number=nrow(pLinear_model),lfc = pLogFold_cut)
+    pos<-which(top[,"adj.P.Val"]<=pValue_cut)
+    return(top[pos,])
+}
 
 LocalizedLinearModel<-
   function(gene_xprsn_annotation,sample_names,nearest_neighbours){
@@ -221,19 +261,7 @@ plot_LOCAL_lm<-function(pEnsembl_gene_id, gene_xprsn_annotation,sample_names,nea
 
 
 
-#' Title
-#'
-#' @param exprsn_contr_column
-#' @param pExprsn_Location a dataframe where starting columns for expression values and finishing columns correspond to gene_id, chromosome and location
-#' @param lfc
-#' @param p_value
-#' @param gene_reference should be a charactor vector
-#'
-#' @return
-#' @export
-#'
-#' @examples
-optimize_Local <-
+optimize_Local_old <-
   function(exprsn_contr_column,
            pExprsn_Location,
            lfc,
@@ -274,15 +302,14 @@ optimize_Local <-
 
       DELocal_table$true_genes <- rownames(DELocal_table) %in% true_gene_list
 
-      pred_DELocal <-
-        ROCR::prediction(abs(DELocal_table$logFC), DELocal_table$true_genes)
+      pred_DELocal <- ROCR::prediction(abs(DELocal_table$logFC), DELocal_table$true_genes)
       DE_local_results <- rbind( DE_local_results,
                                  data.frame(
                                    neighbours = i - 1,
                                    method = "true_genes",
                                    AUC = ROCR::performance(pred_DELocal, "auc")@y.values[[1]]
                                    )
-      )
+                          )
       }
 
 
@@ -308,8 +335,100 @@ optimize_Local <-
     results
   }
 
+#' Title
+#'
+#' @param exprsn_contr_column
+#' @param pExprsn_Location a dataframe where starting columns for expression values and finishing columns correspond to gene_id, chromosome and location
+#' @param lfc
+#' @param p_value
+#' @param gene_reference should be a charactor vector
+#'
+#' @return
+#' @export
+#'
+#' @examples
+optimize_Local <-  function(pSmrExpt,pDesign,pValue_cut,pLogFold_cut,true_gene_list){
+      if( "neighbors_start" %in% (SummarizedExperiment::rowData(pSmrExpt) %>% colnames() )){
+        print("User provided neighborhood will be used")
+      } else {
+        print("Default 1Mb neighborhood will be used")
+      }
+  # function(exprsn_contr_column,
+  #                               pExprsn_Location,
+  #                               lfc,
+  #                               p_value,
+  #                               true_gene_list) {
+  #
+    # if( "neighbors_start" %in% (pExprsn_Location %>% colnames() )){
+    #   print("User provided neighborhood will be used")
+    # } else {
+    #   print("Default 1Mb neighborhood will be used")
+    # }
+    results <- list()
+    linear_models_list <- list()
+    new_tune_neighbour <- data.frame( neighbours = numeric(),
+                                      Number_of_genes =  numeric(),
+                                      class  = character())
+    DE_local_results <- data.frame(neighbours = numeric(),
+                                   method = character(),
+                                   AUC = numeric())
+    pSmrExpt <- DESeq2::DESeqDataSet(pSmrExpt, design = pDesign)
+    pSmrExpt <- DESeq2::estimateSizeFactors(pSmrExpt)
+    SummarizedExperiment::assays(pSmrExpt)$normalized_counts = DESeq2::counts(pSmrExpt, normalized = TRUE)
+    exp_mat <- as.data.frame(SummarizedExperiment::assays(pSmrExpt)$normalized_counts)
+    exp_mat$ensembl_gene_id = rownames(exp_mat)
+    exp_location <- exp_mat %>% dplyr::left_join(
+      SummarizedExperiment::rowData(pSmrExpt) %>% as.data.frame(),
+      by = c("ensembl_gene_id" = "ensembl_gene_id")
+    )
+    sample_names <- colnames(pSmrExpt)
 
-performance_neighbor<-function(linear_models_list,neighbor_nums,exprsn_contr_column,p_adjusted,pLfcCut,reference){
+    design_matrix <- model.matrix(pDesign,SummarizedExperiment::colData(pSmrExpt))
+    neighbor_to_evaluate = 2:15
+
+    l <- for (i in neighbor_to_evaluate)  {
+          print(paste("With neighbours ",(i-1)))
+          linear_models_list[[i]] <- LocalizedLinearModel (exp_location , sample_names, i)
+          DELocal_table <- DELocal_topTable(pLinear_model = linear_models_list[[i]],
+                                            pDesign_matrix = design_matrix,
+                                            pLogFold_cut = pLogFold_cut, pValue_cut = pValue_cut)
+
+          DELocal_table$true_genes <- rownames(DELocal_table) %in% true_gene_list
+
+          pred_DELocal <- ROCR::prediction(abs(DELocal_table$logFC), DELocal_table$true_genes)
+          DE_local_results <- rbind( DE_local_results,
+                                     data.frame(
+                                       neighbours = i - 1,
+                                       method = "true_genes",
+                                       AUC = ROCR::performance(pred_DELocal, "auc")@y.values[[1]]
+                                     )
+          )
+    }
+
+    gene_reference <-dplyr::select(SummarizedExperiment::rowData(pSmrExpt) %>% as.data.frame(),
+                                    ensembl_gene_id)
+
+    gene_reference$true_genes <- gene_reference$ensembl_gene_id %in% true_gene_list
+
+    # declare this function first
+    performance_neighbor <-
+      performance_neighbor(
+        linear_models_list = linear_models_list,
+        neighbor_nums = neighbor_to_evaluate,
+        design_matrix = design_matrix,
+        p_adjusted =  pValue_cut,
+        pLfcCut = pLogFold_cut,
+        reference = gene_reference
+      )
+
+    results$linear_models_list <- linear_models_list
+    #results$new_tune_neighbour <- new_tune_neighbour
+    results$DE_local_results <- DE_local_results
+    results$performance_neighbor <- performance_neighbor
+    results
+  }
+
+performance_neighbor_old<-function(linear_models_list,neighbor_nums,exprsn_contr_column,p_adjusted,pLfcCut,reference){
   nbor_result<-data.frame()
   for (i in neighbor_nums) {
     tmpResult <- newMakeContrastBvsA(linear_models_list[[i]],
@@ -323,6 +442,27 @@ performance_neighbor<-function(linear_models_list,neighbor_nums,exprsn_contr_col
 
   performance_nbor <- performance_analysis(paste(neighbor_nums), "true_genes",reference)
   performance_nbor_melt<- reshape2::melt(performance_nbor[,c("neighbour","TPR","PPV","MCC")],id.vars ="neighbour" )
+  list(prformnc=performance_nbor,melt_prformnc=performance_nbor_melt)
+}
+
+performance_neighbor <- function(linear_models_list,
+                                     neighbor_nums,
+                                     design_matrix,
+                                     p_adjusted,
+                                     pLfcCut,reference){
+  nbor_result<-data.frame()
+  for (i in neighbor_nums) {
+        tmpResult <- DELocal_topTable(pLinear_model = linear_models_list[[i]],
+                                        pDesign_matrix = design_matrix,
+                                        pLogFold_cut = pLfcCut, pValue_cut = p_adjusted)
+
+        tmpResult$ensembl_gene_id <- rownames(tmpResult)
+        reference[paste(i)]<- reference$ensembl_gene_id %in% tmpResult$ensembl_gene_id
+  }
+
+  performance_nbor <- performance_analysis(paste(neighbor_nums), "true_genes",reference)
+  performance_nbor_melt<- reshape2::melt(performance_nbor[,c("neighbour","TPR","PPV","MCC")],
+                                         id.vars ="neighbour" )
   list(prformnc=performance_nbor,melt_prformnc=performance_nbor_melt)
 }
 
