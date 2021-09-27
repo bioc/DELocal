@@ -2,15 +2,9 @@
 % Please edit documentation in R/LocalizedLinearModel.r
 \name{optimize_Local}
 \alias{optimize_Local}
-\title{Title}
+\title{Optimize DELocal with different number of neighbours}
 \usage{
-optimize_Local(
-  exprsn_contr_column,
-  pExprsn_Location,
-  lfc,
-  p_value,
-  true_gene_list
-)
+optimize_Local(pSmrExpt, pDesign, pValue_cut, pLogFold_cut, true_gene_list)
 }
 \arguments{
 \item{pExprsn_Location}{a dataframe where starting columns for expression values and finishing columns correspond to gene_id, chromosome and location}
@@ -21,5 +15,5 @@ optimize_Local(
 
 }
 \description{
-Title
+Optimize DELocal with different number of neighbours
 }

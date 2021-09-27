@@ -1,6 +1,6 @@
 Package: DELocal
 Title: Identifies differentially expressed genes with respect to other local genes.
-Version: 0.0.0.9013
+Version: 0.0.0.99
 Authors@R: 
     person(given = "Rishi",
            family = "Das Roy",
@@ -19,4 +19,6 @@ Imports:
     dplyr,
     reshape2,
     limma,
-    SummarizedExperiment
+    SummarizedExperiment,
+    ggplot2,
+    matrixStats
