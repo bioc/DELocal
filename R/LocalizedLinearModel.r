@@ -117,8 +117,6 @@ plotNeighbourhood<- function(pSmrExpt, pNearest_neighbours=5, pDesign = ~ condit
         selected_gene$neighbors_start <- selected_gene$start_position-500000
         selected_gene$neighbors_end <- selected_gene$start_position+500000
     }
-
-    print(selected_gene)
     neighborsSmExp <- getNeighbours(pSmrExpt = pSmrExpt,
                                     pSelected_gene = selected_gene,
                                     pNearest_neighbours = pNearest_neighbours )
@@ -139,8 +137,9 @@ plotNeighbourhood<- function(pSmrExpt, pNearest_neighbours=5, pDesign = ~ condit
                          by = c("ensembl_gene_id" = "ensembl_gene_id"))
 
     results<-list()
-    results$data <- reshape2::melt(result_data,id = c("start_position",
-                                                      "ensembl_gene_id","chromosome_name"))
+    results$data <-  reshape2::melt(result_data[, c(as.character(states),
+                                     c("start_position","ensembl_gene_id", "chromosome_name"))],
+                                    id = c("start_position","ensembl_gene_id", "chromosome_name"))
 
     results$plot <- ggplot(results$data,aes(x = start_position, y = value, text = ensembl_gene_id)) +
         geom_point(aes(colour = variable),size = 3) +
@@ -321,7 +320,7 @@ optimize_Local <-  function(pSmrExpt,pDesign,pValue_cut,pLogFold_cut,true_gene_l
     neighbor_to_evaluate = 2:15
 
     l <- for (i in neighbor_to_evaluate)  {
-          print(paste("With neighbours ",(i-1)))
+          # print(paste("With neighbours ",(i-1)))
           linear_models_list[[i]] <- LocalizedLinearModel (exp_location , sample_names, i)
           DELocal_table <- DELocal_topTable(pLinear_model = linear_models_list[[i]],
                                             pDesign_matrix = design_matrix,
@@ -579,7 +578,7 @@ compare_methods_best <- function(Methods_list){
 #'
 #' @examples
 rnaSeq_rank <- function(Methods_list,top_gene){
-
+  require(dplyr)
   Methods_list$limma <- Methods_list$limma[ order(Methods_list$limma$adj.P.Val),]
   Methods_list$DEseq <- Methods_list$DEseq[ order(Methods_list$DEseq$padj),]
   Methods_list$edgeR <- Methods_list$edgeR[ order(Methods_list$edgeR$FDR),]
@@ -741,10 +740,9 @@ GO_neighbourAnalysis<-
   }
 
 getNeighbours <- function(pSmrExpt,pSelected_gene,pNearest_neighbours){
-    neighborsSmExp <- pSmrExpt[SummarizedExperiment::rowData(pSmrExpt)$chromosome_name == pSelected_gene$chromosome_name &
-                                 SummarizedExperiment::rowData(pSmrExpt)$start_position >= pSelected_gene$neighbors_start  &
-                                 SummarizedExperiment::rowData(pSmrExpt)$start_position <= pSelected_gene$neighbors_end,]
-    print("test")
+  neighborsSmExp <- subset(pSmrExpt, subset = (chromosome_name == pSelected_gene$chromosome_name &
+                               start_position >= pSelected_gene$neighbors_start  &
+                               start_position <= pSelected_gene$neighbors_end))
     if(dim(neighborsSmExp)[1] > pNearest_neighbours ){
         neighbors <- SummarizedExperiment::rowData(neighborsSmExp) %>% as.data.frame()
         neighbors$distance <- neighbors$start_position - pSelected_gene$start_position
