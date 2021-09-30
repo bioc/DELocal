@@ -98,7 +98,7 @@ DELocal_topTable <- function(pLinear_model,pDesign_matrix,pLogFold_cut,pValue_cu
 #' @importFrom dplyr %>%
 #' @examples
 plotNeighbourhood<- function(pSmrExpt, pNearest_neighbours=5, pDesign = ~ condition,
-                             colorFactor = "condition",pGene_id){
+                             colorFactor = "condition",pGene_id,verbose=FALSE){
     require(ggplot2)
     if(!(pGene_id %in% rownames(pSmrExpt))){
         print(paste(pGene_id," does not exist"))
@@ -113,7 +113,7 @@ plotNeighbourhood<- function(pSmrExpt, pNearest_neighbours=5, pDesign = ~ condit
     if ("neighbors_start" %in% (SummarizedExperiment::rowData(pSmrExpt) %>% colnames())) {
         print("User provided neighborhood will be used")
     } else {
-        print("Default 1Mb neighborhood will be used")
+        # print("Default 1Mb neighborhood will be used")
         selected_gene$neighbors_start <- selected_gene$start_position-500000
         selected_gene$neighbors_end <- selected_gene$start_position+500000
     }
@@ -743,15 +743,14 @@ getNeighbours <- function(pSmrExpt,pSelected_gene,pNearest_neighbours){
   neighborsSmExp <- subset(pSmrExpt, subset = (chromosome_name == pSelected_gene$chromosome_name &
                                start_position >= pSelected_gene$neighbors_start  &
                                start_position <= pSelected_gene$neighbors_end))
-    if(dim(neighborsSmExp)[1] > pNearest_neighbours ){
-        neighbors <- SummarizedExperiment::rowData(neighborsSmExp) %>% as.data.frame()
-        neighbors$distance <- neighbors$start_position - pSelected_gene$start_position
-        neighbors <- neighbors[order(abs(neighbors$distance)),]
-        neighbors <- na.omit(neighbors)
-        neighbors<-neighbors[1:pNearest_neighbours,]
-    }
-
-    return(neighborsSmExp[neighbors$ensembl_gene_id,])
+  neighbors <- SummarizedExperiment::rowData(neighborsSmExp) %>% as.data.frame()
+  neighbors$distance <- neighbors$start_position - pSelected_gene$start_position
+  neighbors <- neighbors[order(abs(neighbors$distance)),]
+  neighbors <- na.omit(neighbors)
+  if(dim(neighborsSmExp)[1] > pNearest_neighbours ){
+      neighbors<-neighbors[1:pNearest_neighbours,]
+  }
+  return(neighborsSmExp[neighbors$ensembl_gene_id,])
 
 }
 
