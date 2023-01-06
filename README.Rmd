@@ -51,7 +51,7 @@ library(DELocal)
 count_matrix <- as.matrix(read.table(file = system.file("extdata", 
                                               "tooth_RNASeq_counts.txt", 
                                               package = "DELocal")))
-colData <- data.frame(condition=gsub("\\..*",x=colnames(count_matrix),replacement = ""),pair_id = rep(1:7,2))
+colData <- data.frame(condition=gsub("\\..*",x=colnames(count_matrix),replacement = ""))
 ```
 
 ### Getting gene chromosomal location  
@@ -83,22 +83,10 @@ rownames(gene_location_sample) <- gene_location_sample$ensembl_gene_id
 
 ```{r message=FALSE,warning=FALSE,error=FALSE}
 smrExpt <- SummarizedExperiment::SummarizedExperiment(assays=list(counts=count_matrix),
-                                                      rowData = gene_location[rownames(count_matrix),], 
+                                                      rowData = gene_location, 
                                                       colData=colData)
-## Note:: The order of rowData should be same as count_matrix
 smrExpt
 ```
-
-### Plot neighbourhood
-
-Here we plot neighbourhood of __Sostdc1__   and get data of its neighbouring genes.
-
-```{r message=FALSE,warning=FALSE,error=FALSE}
-results <- plotNeighbourhood(pSmrExpt = smrExpt,pNearest_neighbours = 5,pDesign = ~ condition,
-                  colorFactor = "condition",pGene_id = "ENSMUSG00000000003")
-
-```
-
 
 ## Final results        
 
@@ -109,11 +97,12 @@ contrast= c("condition","ME13","ME14")
 
 require(dplyr)
 x_genes <- SummarizedExperiment::rowData(smrExpt) %>% 
-     subset(subset=chromosome_name=="X") %>% rownames() 
+    as.data.frame() %>% 
+    filter(chromosome_name=="X") %>% rownames() 
 
-DELocal_result <- DELocal(pSmrExpt = smrExpt[x_genes,], nearest_neighbours = 5,
-                          pDesign = ~ condition,
-                         pValue_cut = 0.05,pLogFold_cut = 0)
+DELocal_result <- DELocal(smrExpt = smrExpt[x_genes,], contrast = contrast,
+                         nearest_neighbours = 5,pDesign = ~ condition,
+                         pValue_cut = 0.05, logFold_cut = 0)
 
 ```
 
@@ -144,10 +133,5 @@ one_genes <- SummarizedExperiment::rowData(smrExpt_dynamicNeighbour) %>%
 DELocal_result <- DELocal(smrExpt = smrExpt_dynamicNeighbour[one_genes,], contrast = contrast,
                          nearest_neighbours = 5,pDesign = ~ condition,
                          pValue_cut = 0.05, logFold_cut = 0)
-```
-
-
-```{r message=FALSE,warning=FALSE,error=FALSE}
-sessionInfo()
 ```
 
