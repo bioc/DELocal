@@ -46,16 +46,17 @@ DELocal<-
     exp_mat <- as.data.frame(SummarizedExperiment::assays(pSmrExpt)$normalized_counts)
     sample_names <- colnames(exp_mat)
 
-    exp_mat$ensembl_gene_id = rownames(exp_mat)
+    exp_mat$Xgene_id = rownames(exp_mat)
+    xRowData = SummarizedExperiment::rowData(pSmrExpt) %>% as.data.frame()
+    xRowData$Xgene_id = rownames(xRowData)
+    exp_mat = exp_mat %>% left_join(
+        xRowData,
+        by = c("Xgene_id" = "Xgene_id")
+    )
 
     require(dplyr)
     linear_model <- LocalizedLinearModel(
-      exp_mat %>% left_join(
-        SummarizedExperiment::rowData(pSmrExpt) %>% as.data.frame(),
-        by = c("ensembl_gene_id" = "ensembl_gene_id")
-      ),
-      sample_names,
-      nearest_neighbours + 1
+      exp_mat, sample_names,nearest_neighbours + 1
     )
 
     design_matrix <- model.matrix(pDesign,SummarizedExperiment::colData(pSmrExpt))
@@ -166,7 +167,7 @@ LocalizedLinearModel<-
 
     for (i in 1:nrow(gene_xprsn_annotation)){
       current_chromosom <- gene_xprsn_annotation[i,]$chromosome_name
-      current_ensembl_gene_id <- gene_xprsn_annotation[i,]$ensembl_gene_id
+      current_ensembl_gene_id <- gene_xprsn_annotation[i,]$Xgene_id
 
       if ("neighbors_start" %in% colnames(gene_xprsn_annotation)) {
         current_neighbors_start <- gene_xprsn_annotation[i,]$neighbors_start
