@@ -11,17 +11,16 @@ changes in gene expression. PLoS Comput Biol 17(9): e1008947.
 <https://doi.org/10.1371/journal.pcbi.1008947>
 
 <!-- badges: start -->
-
 <!-- badges: end -->
 
 The goal of [DELocal](https://doi.org/10.1371/journal.pcbi.1008947) is
-to identify DE genes compared to their neighboring genes from
-the same chromosomal location.
+to identify DE genes compared to their neighboring genes from the same
+chromosomal location.
 
-![neighbor](Sos.png)   
-In the above figure it can be seen that **Sostdc1**
-is differentially expressed in developing tooth tissues (E13 and E14).
-**DELocal** helps in identifying similar genes.
+![neighbor](Sos.png)  
+In the above figure it can be seen that **Sostdc1** is differentially
+expressed in developing tooth tissues (E13 and E14). **DELocal** helps
+in identifying similar genes.
 
 ## Installation
 
@@ -112,9 +111,9 @@ x_genes <- SummarizedExperiment::rowData(smrExpt) %>%
     as.data.frame() %>% 
     filter(chromosome_name=="X") %>% rownames() 
 
-DELocal_result <- DELocal(smrExpt = smrExpt[x_genes,], contrast = contrast,
+DELocal_result <- DELocal(pSmrExpt = smrExpt[x_genes,], #contrast = contrast,
                          nearest_neighbours = 5,pDesign = ~ condition,
-                         pValue_cut = 0.05, logFold_cut = 0)
+                         pValue_cut = 0.05, pLogFold_cut = 0)
 #> [1] "Default 1Mb neighborhood will be used"
 ```
 
