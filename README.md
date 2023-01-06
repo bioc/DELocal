@@ -18,7 +18,8 @@ The goal of [DELocal](https://doi.org/10.1371/journal.pcbi.1008947) is
 to identify DE genes compared to their neighboring genes from
 chromosomal location.
 
-![neighbor](Sos.png) In the above figure it can be seen that **Sostdc1**
+![neighbor](Sos.png)   
+In the above figure it can be seen that **Sostdc1**
 is differentially expressed in developing tooth tissues (E13 and E14).
 **DELocal** helps in identifying similar genes.
 
