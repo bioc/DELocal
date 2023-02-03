@@ -7,12 +7,18 @@
 optimize_Local(pSmrExpt, pDesign, pValue_cut, pLogFold_cut, true_gene_list)
 }
 \arguments{
-\item{pExprsn_Location}{a dataframe where starting columns for expression values and finishing columns correspond to gene_id, chromosome and location}
+\item{pSmrExpt}{a dataframe where starting columns for expression values and finishing columns correspond to gene_id, chromosome and location}
 
-\item{gene_reference}{should be a charactor vector}
+\item{pDesign}{a design formula}
+
+\item{pValue_cut}{p-value cut-off value}
+
+\item{pLogFold_cut}{LogFold change cut-off value}
+
+\item{true_gene_list}{should be a character vector}
 }
 \value{
-
+a result in a form of list
 }
 \description{
 Optimize DELocal with different number of neighbours

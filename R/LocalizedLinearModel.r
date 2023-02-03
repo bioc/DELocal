@@ -1,17 +1,4 @@
-
-
 # Returns count data keeping the expression columns at the begining of the data frame.
-#' Title
-#'
-#' @param ddsHTSeq
-#' @param isNormalized
-#' @param exprsnColPattern
-#' @param geneAnnot
-#'
-#' @return
-#' @export
-#'
-#' @examples
 getCountsFromDESeqData <-function(ddsHTSeq,isNormalized,exprsnColPattern,geneAnnot){
   ddsHTSeq_count<-DESeq2::estimateSizeFactors(ddsHTSeq)
   ddsHTSeq_count<-as.data.frame( DESeq2::counts(ddsHTSeq_count,normalized=isNormalized))
@@ -26,11 +13,13 @@ getCountsFromDESeqData <-function(ddsHTSeq,isNormalized,exprsnColPattern,geneAnn
 #'
 #' @param nearest_neighbours How many nearest neighbours within 1 Mb window to evaluate?
 #' @param pSmrExpt SummarizedExperiment object
-#' @param contrast Same as DeSeq2
-#'
+#' @param pDesign design formula
+#' @param pValue_cut p-value cut off value
+#' @param pLogFold_cut Log fold cut off value
 #' @return A result table
 #' @export
-#'
+#' @importFrom dplyr %>% left_join
+#' @importFrom stats model.matrix
 #' @examples
 DELocal<-
   function(pSmrExpt,nearest_neighbours,pDesign,pValue_cut,pLogFold_cut){
@@ -54,7 +43,6 @@ DELocal<-
         by = c("Xgene_id" = "Xgene_id")
     )
 
-    require(dplyr)
     linear_model <- LocalizedLinearModel(
       exp_mat, sample_names,nearest_neighbours + 1
     )
@@ -65,17 +53,7 @@ DELocal<-
     return(DELocal_table)
   }
 
-#' Table of Top Genes from DELocal Linear Model Fit
-#'
-#' @param pLinear_model
-#' @param pDesign_matrix
-#' @param pLogFold_cut
-#' @param pValue_cut
-#'
-#' @return
-#' @export
-#'
-#' @examples
+# Table of Top Genes from DELocal Linear Model Fit
 DELocal_topTable <- function(pLinear_model,pDesign_matrix,pLogFold_cut,pValue_cut) {
     fit<-limma::lmFit(pLinear_model,pDesign_matrix)
     fit2 <- limma::contrasts.fit(fit, coefficients = ncol(pDesign_matrix))
@@ -86,21 +64,10 @@ DELocal_topTable <- function(pLinear_model,pDesign_matrix,pLogFold_cut,pValue_cu
 }
 
 
-#' Returns median expression from different conditions of genes from a neighbourhood of a gene of interest.
-#'
-#' @param pSmrExpt
-#' @param pNearest_neighbours
-#' @param pDesign
-#' @param colorFactor
-#' @param pGene_id
-#'
-#' @return
-#' @export
-#' @importFrom dplyr %>%
-#' @examples
+# Returns median expression from different conditions of genes from a neighbourhood of a gene of interest.
+#' @import ggplot2
 plotNeighbourhood<- function(pSmrExpt, pNearest_neighbours=5, pDesign = ~ condition,
                              colorFactor = "condition",pGene_id,verbose=FALSE){
-    require(ggplot2)
     if(!(pGene_id %in% rownames(pSmrExpt))){
         print(paste(pGene_id," does not exist"))
         return()
@@ -147,7 +114,7 @@ plotNeighbourhood<- function(pSmrExpt, pNearest_neighbours=5, pDesign = ~ condit
         scale_x_continuous("Gene start distance ",
                            breaks = results$data$start_position,
                            labels = results$data$ensembl_gene_id,
-                           limit = c(selected_gene$neighbors_start, selected_gene$neighbors_end)) +
+                           limits = c(selected_gene$neighbors_start, selected_gene$neighbors_end)) +
         ylab("Normalized rna-seq") + ggtitle(paste(selected_gene$ensembl_gene_id)) +
         theme_bw() + theme(axis.text.y = element_text(size = 15),
             axis.text.x = element_text(size = 10,angle = 45,hjust = 1),
@@ -157,9 +124,9 @@ plotNeighbourhood<- function(pSmrExpt, pNearest_neighbours=5, pDesign = ~ condit
     return(results)
 }
 
+#' @importFrom stats na.omit
 LocalizedLinearModel<-
   function(gene_xprsn_annotation,sample_names,nearest_neighbours){
-    require(gtools)
 
     gene_xprsn_annotation <- gene_xprsn_annotation[order(gene_xprsn_annotation$chromosome_name,gene_xprsn_annotation$start_position),]
 
@@ -214,8 +181,14 @@ LocalizedLinearModel<-
 # plot_LOCAL_lm("ENSMUSG00000095105",anno_trFitENSG_prot[!duplicated(anno_trFitENSG_prot$ensembl_gene_id), ],c(E13_Tooth_Br,E14_Tooth_Br,E14_Jaw_NA),6)
 # Setting ylim in R's plot.lm residual plot
 # plotlm(heatr1_lm,pch=16,col=c(rep("red",5),rep("green",5),rep("blue",5)),which=1)
+#' @importFrom stats na.omit
+#' @importFrom stats median
+#' @importFrom stats sd
+#' @importFrom stats var
+#' @importFrom graphics abline
+#' @importFrom graphics par
+#' @importFrom graphics legend
 plot_LOCAL_lm<-function(pEnsembl_gene_id, gene_xprsn_annotation,sample_names,nearest_neighbours,isNeigbor){
-  require(gtools)
   # parameters :: nearest_neighbours,
   gene_xprsn_annotation <- gene_xprsn_annotation[order(gene_xprsn_annotation$chromosome_name,gene_xprsn_annotation$start_position),]
 
@@ -281,15 +254,12 @@ plot_LOCAL_lm<-function(pEnsembl_gene_id, gene_xprsn_annotation,sample_names,nea
 
 #' Optimize DELocal with different number of neighbours
 #'
-#' @param exprsn_contr_column
-#' @param pExprsn_Location a dataframe where starting columns for expression values and finishing columns correspond to gene_id, chromosome and location
-#' @param lfc
-#' @param p_value
-#' @param gene_reference should be a charactor vector
-#'
-#' @return
-#' @export
-#'
+#' @param pSmrExpt a dataframe where starting columns for expression values and finishing columns correspond to gene_id, chromosome and location
+#' @param pDesign a design formula
+#' @param pLogFold_cut LogFold change cut-off value
+#' @param pValue_cut p-value cut-off value
+#' @param true_gene_list should be a character vector
+#' @return a result in a form of list
 #' @examples
 optimize_Local <-  function(pSmrExpt,pDesign,pValue_cut,pLogFold_cut,true_gene_list){
       if( "neighbors_start" %in% (SummarizedExperiment::rowData(pSmrExpt) %>% colnames() )){
@@ -382,15 +352,6 @@ performance_neighbor <- function(linear_models_list,
   list(prformnc=performance_nbor,melt_prformnc=performance_nbor_melt)
 }
 
-#' Title
-#'
-#' @param top_genes
-#' @param Methods_list
-#'
-#' @return
-#' @export
-#'
-#' @examples
 roc_from_topGenes <- function(top_genes,Methods_list) {
   Method_compare_top <- data.frame(top_genes = numeric(),roc_auc=  numeric(), method  = character())
 
@@ -441,14 +402,7 @@ roc_from_topGenes <- function(top_genes,Methods_list) {
   Method_compare_top
 }
 
-#' Title
-#'
-#' @param Methods_list
-#'
-#' @return
-#' @export
-#'
-#' @examples
+#' @import ROCR
 compare_methods <- function(Methods_list){
   results <- list()
   Method_compare <- data.frame(auc = numeric(), method  = character(), curve  = character())
@@ -502,14 +456,6 @@ compare_methods <- function(Methods_list){
   results
 }
 
-#' Title
-#'
-#' @param Methods_list
-#'
-#' @return
-#' @export
-#'
-#' @examples
 compare_methods_best <- function(Methods_list){
   results <- list()
   Method_compare <- data.frame(auc = numeric(), method  = character(), curve  = character())
@@ -569,17 +515,7 @@ compare_methods_best <- function(Methods_list){
   results
 }
 
-#' Title
-#'
-#' @param Methods_list
-#' @param top_gene
-#'
-#' @return
-#' @export
-#'
-#' @examples
 rnaSeq_rank <- function(Methods_list,top_gene){
-  require(dplyr)
   Methods_list$limma <- Methods_list$limma[ order(Methods_list$limma$adj.P.Val),]
   Methods_list$DEseq <- Methods_list$DEseq[ order(Methods_list$DEseq$padj),]
   Methods_list$edgeR <- Methods_list$edgeR[ order(Methods_list$edgeR$FDR),]
@@ -590,7 +526,7 @@ rnaSeq_rank <- function(Methods_list,top_gene){
     result %>%
       dplyr::mutate(rank = 1:n()) %>%
       dplyr::filter(tooth_genes==TRUE) %>%
-      dplyr::mutate(sequence_rank = 1:n()) %>%
+      dplyr::mutate(sequence_rank = 1:dplyr::n()) %>%
       dplyr::select(ensembl_gene_id,rank,sequence_rank)
   }
   tables <- lapply(Methods_list, makeRank)
@@ -601,15 +537,6 @@ rnaSeq_rank <- function(Methods_list,top_gene){
   return(combined_r)
 }
 
-#' Title
-#'
-#' @param Methods
-#' @param reference
-#'
-#' @return
-#' @export
-#'
-#' @examples
 combo_results <- function(Methods,reference){
   methods_name <-names(Methods)
   for (i in 1:length(methods_name)){
@@ -618,9 +545,9 @@ combo_results <- function(Methods,reference){
   reference
 }
 
+#' @importFrom stats na.omit
 neighbourAnalysis<-
   function(gene_xprsn_annotation,nearest_neighbours){
-    require(gtools)
     # parameters :: nearest_neighbours,
     gene_xprsn_annotation <- gene_xprsn_annotation[order(gene_xprsn_annotation$chromosome_name,gene_xprsn_annotation$start_position),]
 
@@ -667,25 +594,13 @@ neighbourAnalysis<-
           isDE_E14_JAW = current_isDE_E14_JAW, num_neighbours = num_neighbours-1, DE_E13_E14_neighbours = DE_E13_E14_neighbours,
           DE_E14_Jaw_neighbours = DE_E14_Jaw_neighbours, tooth_genes_ECM = current_tooth_genes
         ))
-
-
-
     }
     return(results)
   }
 
-#' Title
-#'
-#' @param gene_xprsn_annotation
-#' @param nearest_neighbours
-#'
-#' @return
-#' @export
-#'
-#' @examples
+#' @importFrom stats na.omit
 GO_neighbourAnalysis<-
   function(gene_xprsn_annotation,nearest_neighbours){
-    require(gtools)
 
     results <-
       data.frame(
@@ -740,6 +655,7 @@ GO_neighbourAnalysis<-
     return(results)
   }
 
+#' @importFrom stats na.omit
 getNeighbours <- function(pSmrExpt,pSelected_gene,pNearest_neighbours){
   neighborsSmExp <- subset(pSmrExpt, subset = (chromosome_name == pSelected_gene$chromosome_name &
                                start_position >= pSelected_gene$neighbors_start  &
@@ -755,21 +671,10 @@ getNeighbours <- function(pSmrExpt,pSelected_gene,pNearest_neighbours){
 
 }
 
-#' Title
-#'
-#' @param Method_name
-#' @param reference_name
-#' @param reference
-#'
-#' @return
-#' @export
-#'
-#' @examples
 performance_analysis<-function(Method_name, reference_name, reference){
-  require(PCRedux)
   results <- data.frame()
   for (i in 1:length(Method_name)){
-    x<-performeR( reference[,Method_name[i]],  reference[,reference_name])
+    x<-PCRedux::performeR( reference[,Method_name[i]],  reference[,reference_name])
     x$neighbour <-Method_name[i]
     results <- rbind(results,x)
   }

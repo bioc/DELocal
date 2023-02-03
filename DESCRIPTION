@@ -1,18 +1,19 @@
 Package: DELocal
 Title: Identifies differentially expressed genes with respect to other local genes.
-Version: 0.0.1.02
+Version: 0.99.1
 Authors@R: 
     person(given = "Rishi",
            family = "Das Roy",
            role = c("aut", "cre"),
            email = "rishi.dasroy@helsinki.fi",
-           comment = c(ORCID = "https://orcid.org/0000-0002-3276-7279"))
+           comment = c(ORCID = "0000-0002-3276-7279"))
 Description: Identifies differentially expressed genes with respect to other local genes.
 License: MIT + file LICENSE
 Encoding: UTF-8
-LazyData: true
-RoxygenNote: 7.1.1
-biocViews:
+LazyData: false
+RoxygenNote: 7.2.3
+biocViews: GeneExpression, DifferentialExpression, RNASeq, 
+        Transcriptomics
 Imports: 
     DESeq2,
     ROCR,
@@ -21,4 +22,12 @@ Imports:
     limma,
     SummarizedExperiment,
     ggplot2,
-    matrixStats
+    matrixStats,
+    graphics,
+    stats
+Suggests: 
+    knitr,
+    PCRedux,
+    rmarkdown,
+    stringr
+VignetteBuilder: knitr

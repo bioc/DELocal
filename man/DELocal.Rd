@@ -11,7 +11,11 @@ DELocal(pSmrExpt, nearest_neighbours, pDesign, pValue_cut, pLogFold_cut)
 
 \item{nearest_neighbours}{How many nearest neighbours within 1 Mb window to evaluate?}
 
-\item{contrast}{Same as DeSeq2}
+\item{pDesign}{design formula}
+
+\item{pValue_cut}{p-value cut off value}
+
+\item{pLogFold_cut}{Log fold cut off value}
 }
 \value{
 A result table
