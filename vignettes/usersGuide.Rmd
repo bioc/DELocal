@@ -1,5 +1,5 @@
 ---
-title: "DELOcal usersGuide"
+title: "DELocal usersGuide"
 output: 
     BiocStyle::html_document:
     toc: true
@@ -17,6 +17,33 @@ knitr::opts_chunk$set(
 )
 ```
 
+# DELocal  
+
+## Introduction  
+
+The goal of [DELocal](https://doi.org/10.1371/journal.pcbi.1008947) is to identify DE genes compared to their neighboring genes from the same chromosomal location.
+
+![neighbor](Sos.png)  
+In the above figure it can be seen that **Sostdc1** is differentially expressed in developing tooth tissues (E13 and E14). __DELocal__ helps in identifying similar genes.
+
+## Installation  
+
+```{r eval=FALSE}
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("delocal")
+```
+
+To install from github
+
+```{r eval=FALSE}
+if (!requireNamespace("devtools")) {
+  install.packages("devtools")
+}
+devtools::install_github("dasroy/delocal")
+```
+
 ## How to run
 
 This is a basic example which shows you how to use __DELocal__:
@@ -30,7 +57,8 @@ library(DELocal)
 count_matrix <- as.matrix(read.table(file = system.file("extdata", 
                                               "tooth_RNASeq_counts.txt", 
                                               package = "DELocal")))
-colData <- data.frame(condition=gsub("\\..*",x=colnames(count_matrix),replacement = ""))
+colData <- data.frame(condition=gsub("\\..*",x=colnames(count_matrix),
+                                     replacement = ""))
 ```
 
 ### Getting gene chromosomal location  
@@ -47,9 +75,9 @@ head(gene_location)
 
 #### Example code to get gene location information like above
 
-```{r eval=FALSE}
-require(biomaRt)
-gene_attributes<- c("ensembl_gene_id", "start_position", "chromosome_name")
+```{r eval=TRUE}
+library(biomaRt)
+gene_attributes <- c("ensembl_gene_id", "start_position", "chromosome_name")
 ensembl_ms_mart <- useMart(biomart="ENSEMBL_MART_ENSEMBL",
                            dataset="mmusculus_gene_ensembl", host="www.ensembl.org")
 gene_location_sample <- getBM(attributes=gene_attributes, mart=ensembl_ms_mart,
@@ -72,36 +100,45 @@ smrExpt
 These may take long time to run the whole data therefore here we will analyse genes only from X chromosome.  
 
 ```{r message=FALSE,warning=FALSE,error=FALSE}
-contrast= c("condition","ME13","ME14")
-
-require(dplyr)
+library(dplyr)
 x_genes <- SummarizedExperiment::rowData(smrExpt) %>% 
     as.data.frame() %>% 
     filter(chromosome_name=="X") %>% rownames() 
 
-DELocal_result <- DELocal(pSmrExpt = smrExpt[x_genes,], #contrast = contrast,
+DELocal_result <- DELocal(pSmrExpt = smrExpt[x_genes,],
                          nearest_neighbours = 5,pDesign = ~ condition,
                          pValue_cut = 0.05, pLogFold_cut = 0)
-
 ```
 
+### Plot expression pattern of a neighbourhood of a gene 
+
+```{r message=FALSE,warning=FALSE,error=FALSE}
+DELocal::plotNeighbourhood(pSmrExpt = smrExpt, pGene_id = "ENSMUSG00000059401")
+```
 
 ## Dynamic neighbour
 
 Here TAD domain boundaries will be used as dynamic boundaries
 
-``` r
-TADKB <- readRDS("../DELocal_manuscript/markdowns/Mouse_TAD_boundaries.rds")
-gene_location_dynamicNeighbourhood <- TADKB %>% dplyr::select(ensembl_gene_id, start_position, chromosome_name,startTAD   ,endTAD) %>% unique()
-rownames(gene_location_dynamicNeighbourhood) <- gene_location_dynamicNeighbourhood$ensembl_gene_id
+```{r message=FALSE,warning=FALSE,error=FALSE}
+TADKB <- readRDS(system.file("extdata", "Mouse_TAD_boundaries.rds",
+                             package = "DELocal"))
+gene_location_dynamicNeighbourhood <- TADKB %>% dplyr::select(ensembl_gene_id, 
+                start_position, chromosome_name, startTAD, endTAD) %>% unique()
+
+rownames(gene_location_dynamicNeighbourhood) <- 
+    gene_location_dynamicNeighbourhood$ensembl_gene_id
 
 # rename the columns as required by DELocal
-colnames(gene_location_dynamicNeighbourhood)[4:5] <- c("neighbors_start","neighbors_end")
+colnames(gene_location_dynamicNeighbourhood)[4:5] <- c("neighbors_start",
+                                                       "neighbors_end")
+common_genes <- intersect(rownames(count_matrix),
+                          rownames(gene_location_dynamicNeighbourhood) )
 
 smrExpt_dynamicNeighbour <-
     SummarizedExperiment::SummarizedExperiment(
-        assays = list(counts = count_matrix),
-        rowData = gene_location_dynamicNeighbourhood[rownames(count_matrix), ],
+        assays = list(counts = count_matrix[common_genes,]),
+        rowData = gene_location_dynamicNeighbourhood[common_genes, ],
         colData = colData
     )
                                                       
@@ -109,9 +146,9 @@ one_genes <- SummarizedExperiment::rowData(smrExpt_dynamicNeighbour) %>%
     as.data.frame() %>% 
     filter(chromosome_name=="1") %>% rownames() 
 
-DELocal_result <- DELocal(smrExpt = smrExpt_dynamicNeighbour[one_genes,], contrast = contrast,
+DELocal_result <- DELocal(pSmrExpt = smrExpt_dynamicNeighbour[one_genes,], 
                          nearest_neighbours = 5,pDesign = ~ condition,
-                         pValue_cut = 0.05, logFold_cut = 0)
+                         pValue_cut = 0.05, pLogFold_cut = 0)
 ```
 
 ## SessionInfo

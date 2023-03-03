@@ -1,5 +1,7 @@
+*.Rproj
 .Rproj.user
 .Rhistory
 .RData
 test
 inst/doc
+README.*

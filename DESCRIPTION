@@ -1,5 +1,5 @@
 Package: DELocal
-Title: Identifies differentially expressed genes with respect to other local genes.
+Title: Identifies differentially expressed genes with respect to other local genes
 Version: 0.99.1
 Authors@R: 
     person(given = "Rishi",
@@ -7,8 +7,14 @@ Authors@R:
            role = c("aut", "cre"),
            email = "rishi.dasroy@helsinki.fi",
            comment = c(ORCID = "0000-0002-3276-7279"))
-Description: Identifies differentially expressed genes with respect to other local genes.
+Description: The goal of DELocal is to identify DE genes compared to their 
+    neighboring genes from the same chromosomal location. It has been shown
+    that genes of related functions are generally very far from each other 
+    in the chromosome. DELocal utilzes this information to identify DE genes
+    comparing with their neighbouring genes.
 License: MIT + file LICENSE
+URL: https://github.com/dasroy/DELocal
+BugReports: https://github.com/dasroy/DELocal/issues
 Encoding: UTF-8
 LazyData: false
 RoxygenNote: 7.2.3
@@ -16,16 +22,15 @@ biocViews: GeneExpression, DifferentialExpression, RNASeq,
         Transcriptomics
 Imports: 
     DESeq2,
-    ROCR,
     dplyr,
     reshape2,
     limma,
     SummarizedExperiment,
     ggplot2,
     matrixStats,
-    graphics,
     stats
 Suggests: 
+    biomaRt,
     knitr,
     PCRedux,
     rmarkdown,

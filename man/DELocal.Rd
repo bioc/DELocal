@@ -2,9 +2,15 @@
 % Please edit documentation in R/LocalizedLinearModel.r
 \name{DELocal}
 \alias{DELocal}
-\title{Finds differentially expressed genes by comparing neighboring genes.}
+\title{Finds differentially expressed genes by comparing neighboring genes}
 \usage{
-DELocal(pSmrExpt, nearest_neighbours, pDesign, pValue_cut, pLogFold_cut)
+DELocal(
+  pSmrExpt,
+  nearest_neighbours,
+  pDesign,
+  pValue_cut = 0.05,
+  pLogFold_cut = 0
+)
 }
 \arguments{
 \item{pSmrExpt}{SummarizedExperiment object}
@@ -15,11 +21,36 @@ DELocal(pSmrExpt, nearest_neighbours, pDesign, pValue_cut, pLogFold_cut)
 
 \item{pValue_cut}{p-value cut off value}
 
-\item{pLogFold_cut}{Log fold cut off value}
+\item{pLogFold_cut}{cut off value for relative log fold change compared to neighbouring genes}
 }
 \value{
-A result table
+A dataframe with a row for the number top genes and the following columns:
+relative.logFC    relative logFC compared to neighbouring genes
+P.Value  raw p-value
+adj.P.Value	adjusted p-value
+B log-odds that the gene is differentially expressed
 }
 \description{
-Finds differentially expressed genes by comparing neighboring genes.
+Finds differentially expressed genes by comparing neighboring genes
+}
+\examples{
+count_matrix <- as.matrix(read.table(file = system.file("extdata",
+                                                                  "tooth_RNASeq_counts.txt",
+                                                                  package = "DELocal")))
+colData <- data.frame(condition=gsub("\\\\..*",x=colnames(count_matrix),
+                                     replacement = ""))
+gene_location <- read.table(file = system.file("extdata", "gene_location.txt",
+                                    package = "DELocal"))
+smrExpt <- SummarizedExperiment::SummarizedExperiment(
+                                        assays=list(counts=count_matrix),
+                                        rowData = gene_location,
+                                        colData=colData)
+contrast= c("condition","ME13","ME14")
+require(dplyr)
+x_genes <- SummarizedExperiment::rowData(smrExpt) \%>\%
+      as.data.frame() \%>\%
+      filter(chromosome_name=="X") \%>\% rownames()
+DELocal_result <- DELocal(pSmrExpt = smrExpt[x_genes,],
+                         nearest_neighbours = 5, pDesign = ~ condition,
+                         pValue_cut = 0.05, pLogFold_cut = 0)
 }
