@@ -19,16 +19,20 @@ DELocal(
 
 \item{pDesign}{design formula}
 
-\item{pValue_cut}{p-value cut off value}
+\item{pValue_cut}{cut off value for adjusted p-value}
 
 \item{pLogFold_cut}{cut off value for relative log fold change compared to neighbouring genes}
 }
 \value{
-A dataframe with a row for the number top genes and the following columns:
-relative.logFC    relative logFC compared to neighbouring genes
-P.Value  raw p-value
-adj.P.Value	adjusted p-value
-B log-odds that the gene is differentially expressed
+A data.frame with top significant genes with the following columns:
+
+relative.logFC: relative logFC compared to neighbouring genes
+
+P.Value: raw p-value
+
+adj.P.Value: adjusted p-value
+
+B:   log-odds that the gene is differentially expressed
 }
 \description{
 Finds differentially expressed genes by comparing neighboring genes

@@ -3,13 +3,18 @@
 #' @param nearest_neighbours How many nearest neighbours within 1 Mb window to evaluate?
 #' @param pSmrExpt SummarizedExperiment object
 #' @param pDesign design formula
-#' @param pValue_cut p-value cut off value
+#' @param pValue_cut cut off value for adjusted p-value
 #' @param pLogFold_cut cut off value for relative log fold change compared to neighbouring genes
-#' @return A dataframe with a row for the number top genes and the following columns:
-#' relative.logFC    relative logFC compared to neighbouring genes
-#' P.Value  raw p-value
-#' adj.P.Value	adjusted p-value
-#' B log-odds that the gene is differentially expressed
+#' @return A data.frame with top significant genes with the following columns:
+#'
+#' relative.logFC: relative logFC compared to neighbouring genes
+#'
+#' P.Value: raw p-value
+#'
+#' adj.P.Value: adjusted p-value
+#'
+#' B:   log-odds that the gene is differentially expressed
+#'
 #' @export
 #' @importFrom dplyr %>% left_join
 #' @importFrom stats model.matrix
@@ -36,6 +41,7 @@
 #'                          pValue_cut = 0.05, pLogFold_cut = 0)
 DELocal<-
   function(pSmrExpt,nearest_neighbours,pDesign,pValue_cut = 0.05, pLogFold_cut = 0){
+    stopifnot("`pSmrExpt` must be a SummarizedExperiment object" = inherits(pSmrExpt,"SummarizedExperiment"))
     if("neighbors_start" %in% (SummarizedExperiment::rowData(pSmrExpt) %>% colnames() )){
         message("User provided neighborhood will be used")
     } else {
@@ -69,12 +75,13 @@ DELocal<-
   }
 
 # Table of Top Genes from DELocal Linear Model Fit
+#' @import limma
 .DELocal_topTable <- function(pLinear_model,pDesign_matrix,pLogFold_cut,pValue_cut) {
-    fit<-limma::lmFit(pLinear_model,pDesign_matrix)
-    fit2 <- limma::contrasts.fit(fit, coefficients = ncol(pDesign_matrix))
-    fit3<-limma::eBayes(fit2)
-    top<-limma::topTable(fit3,adjust="BH",number=nrow(pLinear_model),lfc = pLogFold_cut)
-    pos<-which(top[,"adj.P.Val"]<=pValue_cut)
+    fit <- lmFit(pLinear_model,pDesign_matrix)
+    fit2 <- contrasts.fit(fit, coefficients = ncol(pDesign_matrix))
+    fit3 <- eBayes(fit2)
+    top <- limma::topTable(fit3,adjust="BH",number=nrow(pLinear_model),lfc = pLogFold_cut)
+    pos <- which(top[,"adj.P.Val"]<=pValue_cut)
     return(top[pos,])
 }
 
@@ -103,7 +110,7 @@ DELocal<-
 #'                                     package = "DELocal"))
 #' smrExpt <- SummarizedExperiment::SummarizedExperiment(assays=list(counts=count_matrix),
 #'                                             rowData = gene_location,
-#'                                             colData=colData)
+#'                                             colData = colData)
 #' contrast= c("condition","ME13","ME14")
 #' require(dplyr)
 #' x_genes <- SummarizedExperiment::rowData(smrExpt) %>%
@@ -112,6 +119,7 @@ DELocal<-
 #' DELocal::plotNeighbourhood(pSmrExpt = smrExpt, pGene_id = "ENSMUSG00000059401")
 plotNeighbourhood<- function(pSmrExpt, pNearest_neighbours=5, pDesign = ~ condition,
                              colorFactor = "condition", pGene_id){
+    stopifnot("`pSmrExpt` must be a SummarizedExperiment object" = inherits(pSmrExpt,"SummarizedExperiment"))
     if(!(pGene_id %in% rownames(pSmrExpt))){
         message(paste(pGene_id," does not exist"))
         return()
@@ -121,7 +129,7 @@ plotNeighbourhood<- function(pSmrExpt, pNearest_neighbours=5, pDesign = ~ condit
     pSmrExpt <- estimateSizeFactors(pSmrExpt)
     SummarizedExperiment::assays(pSmrExpt)$normalized_counts = counts(pSmrExpt, normalized = TRUE)
 
-    selected_gene = pSmrExpt[pGene_id] %>% rowData()
+    selected_gene <- pSmrExpt[pGene_id] %>% rowData()
     if ("neighbors_start" %in% (rowData(pSmrExpt) %>% colnames())) {
         message("User provided neighborhood will be used")
     } else {
@@ -134,7 +142,7 @@ plotNeighbourhood<- function(pSmrExpt, pNearest_neighbours=5, pDesign = ~ condit
                                     pNearest_neighbours = pNearest_neighbours )
 
     exp_mat <- as.data.frame(SummarizedExperiment::assays(neighborsSmExp)$normalized_counts)
-    exp_mat$ensembl_gene_id = rownames(exp_mat)
+    exp_mat$ensembl_gene_id <- rownames(exp_mat)
     sample_names <- colnames(exp_mat)
 
     states <- colData(pSmrExpt) %>% as.data.frame() %>% dplyr::pull(colorFactor) %>% unique()
@@ -148,7 +156,7 @@ plotNeighbourhood<- function(pSmrExpt, pNearest_neighbours=5, pDesign = ~ condit
         dplyr::left_join(as.data.frame(rowData(neighborsSmExp)),
                          by = c("ensembl_gene_id" = "ensembl_gene_id"))
 
-    results<-list()
+    results <- list()
     results$data <-  reshape2::melt(result_data[, c(as.character(states),
                                      c("start_position","ensembl_gene_id", "chromosome_name"))],
                                     id = c("start_position","ensembl_gene_id", "chromosome_name"))
@@ -177,7 +185,7 @@ plotNeighbourhood<- function(pSmrExpt, pNearest_neighbours=5, pDesign = ~ condit
                                                          gene_xprsn_annotation$start_position),]
 
     linear_models <-  data.frame(matrix(vector(), 0,length(sample_names),
-                                        dimnames=list(c(), sample_names)), stringsAsFactors=F)
+                                        dimnames=list(c(), sample_names)), stringsAsFactors=FALSE)
 
     for (i in seq_len(nrow(gene_xprsn_annotation))){
       current_chromosom <- gene_xprsn_annotation[i,]$chromosome_name
@@ -223,8 +231,6 @@ plotNeighbourhood<- function(pSmrExpt, pNearest_neighbours=5, pDesign = ~ condit
     return(linear_models)
   }
 
-
-
 #' @importFrom stats na.omit
 .getNeighbours <- function(pSmrExpt,pSelected_gene,pNearest_neighbours){
   neighborsSmExp <- subset(pSmrExpt, subset = (chromosome_name == pSelected_gene$chromosome_name &
@@ -238,5 +244,7 @@ plotNeighbourhood<- function(pSmrExpt, pNearest_neighbours=5, pDesign = ~ condit
       neighbors<-neighbors[seq_len(pNearest_neighbours),]
   }
   return(neighborsSmExp[neighbors$ensembl_gene_id,])
-
 }
+
+utils::globalVariables(c("chromosome_name", "start_position", "value",
+                         "ensembl_gene_id","variable"))

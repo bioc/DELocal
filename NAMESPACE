@@ -3,6 +3,7 @@
 export(DELocal)
 export(plotNeighbourhood)
 import(ggplot2)
+import(limma)
 importFrom(DESeq2,DESeqDataSet)
 importFrom(DESeq2,counts)
 importFrom(DESeq2,estimateSizeFactors)

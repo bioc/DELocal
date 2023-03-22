@@ -1,11 +1,11 @@
 ---
-title: "DELocal usersGuide"
+title: "DELocal"
 output: 
     BiocStyle::html_document:
     toc: true
     toc_depth: 2
 vignette: >
-  %\VignetteIndexEntry{usersGuide}
+  %\VignetteIndexEntry{DELocal}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -17,16 +17,16 @@ knitr::opts_chunk$set(
 )
 ```
 
-# DELocal  
+# DELocal
 
-## Introduction  
+## Introduction
 
-The goal of [DELocal](https://doi.org/10.1371/journal.pcbi.1008947) is to identify DE genes compared to their neighboring genes from the same chromosomal location.
+Exploration of genetically modified organisms, developmental processes, diseases or responses to various treatments require accurate measurement of changes in gene expression. This can be done for thousands of genes using high throughput technologies such as microarray and RNAseq. However, identification of differentially expressed (DE) genes poses technical challenges due to limited sample size, few replicates, or simply very small changes in expression levels. Consequently, several methods have been developed to determine DE genes, such as Limma, edgeR, and DESeq2. These methods identify DE genes based on the expression levels alone. As genomic co-localization of genes is generally not linked to co-expression, we deduced that DE genes could be detected with the help of genes from chromosomal neighbourhood. Here, we present a new method, [DELocal](https://doi.org/10.1371/journal.pcbi.1008947), which identifies DE genes by comparing their expression changes to changes in adjacent genes in their chromosomal regions.
 
-![neighbor](Sos.png)  
-In the above figure it can be seen that **Sostdc1** is differentially expressed in developing tooth tissues (E13 and E14). __DELocal__ helps in identifying similar genes.
+![neighbor](Sos.png)\
+In the above figure it can be seen that **Sostdc1** is differentially expressed in developing tooth tissues (E13 and E14). **DELocal** helps in identifying similar genes.
 
-## Installation  
+## Installation
 
 ```{r eval=FALSE}
 if (!require("BiocManager", quietly = TRUE))
@@ -46,11 +46,11 @@ devtools::install_github("dasroy/delocal")
 
 ## How to run
 
-This is a basic example which shows you how to use __DELocal__:
+This is a basic example which shows you how to use **DELocal**:
 
 First a **SummarizedExperiment** object will be configured with gene expression count matrix and gene location info.
 
-### Read the raw count values  
+#### Read the raw count values
 
 ```{r example,message=FALSE,warning=FALSE}
 library(DELocal)
@@ -61,9 +61,9 @@ colData <- data.frame(condition=gsub("\\..*",x=colnames(count_matrix),
                                      replacement = ""))
 ```
 
-### Getting gene chromosomal location  
+#### Getting gene chromosomal location
 
-Example of required gene location information  
+Example of required gene location information
 
 ```{r message=FALSE,warning=FALSE}
 gene_location <- read.table(file = system.file("extdata", 
@@ -71,7 +71,6 @@ gene_location <- read.table(file = system.file("extdata",
                                               package = "DELocal"))
 head(gene_location)
 ```
-
 
 #### Example code to get gene location information like above
 
@@ -85,8 +84,7 @@ gene_location_sample <- getBM(attributes=gene_attributes, mart=ensembl_ms_mart,
 rownames(gene_location_sample) <- gene_location_sample$ensembl_gene_id
 ```
 
-
-### Integrating gene expression and location into a single object.
+#### Integrating gene expression and location into a single object.
 
 ```{r message=FALSE,warning=FALSE,error=FALSE}
 smrExpt <- SummarizedExperiment::SummarizedExperiment(assays=list(counts=count_matrix),
@@ -95,9 +93,9 @@ smrExpt <- SummarizedExperiment::SummarizedExperiment(assays=list(counts=count_m
 smrExpt
 ```
 
-### Final results        
+#### Final results
 
-These may take long time to run the whole data therefore here we will analyse genes only from X chromosome.  
+These may take long time to run the whole data therefore here we will analyse genes only from X chromosome. Here in this example DELocal compares each gene with 5 'nearest_neighbours' and returns only genes whose adjusted *p*-value is less than pValue_cut.
 
 ```{r message=FALSE,warning=FALSE,error=FALSE}
 library(dplyr)
@@ -107,24 +105,29 @@ x_genes <- SummarizedExperiment::rowData(smrExpt) %>%
 
 DELocal_result <- DELocal(pSmrExpt = smrExpt[x_genes,],
                          nearest_neighbours = 5,pDesign = ~ condition,
-                         pValue_cut = 0.05, pLogFold_cut = 0)
+                         pValue_cut = 0.05)
+
+head(round(DELocal_result,digits = 9))
 ```
 
-### Plot expression pattern of a neighbourhood of a gene 
+The results are already sorted in ascending order of adjusted *p*-value (adj.P.Val)
+
+#### Plot expression pattern of a neighbourhood of a gene
+
+plotNeighbourhood function can be used to plot median expressions of different 'condition' for a gene of interest and its pNearest_neighbours genes.
 
 ```{r message=FALSE,warning=FALSE,error=FALSE}
-DELocal::plotNeighbourhood(pSmrExpt = smrExpt, pGene_id = "ENSMUSG00000059401")
+DELocal::plotNeighbourhood(pSmrExpt = smrExpt, pGene_id = "ENSMUSG00000059401", 
+                           pNearest_neighbours=5, pDesign = ~ condition)$plot
 ```
 
-## Dynamic neighbour
+#### Dynamic neighbour
 
 Here TAD domain boundaries will be used as dynamic boundaries
 
 ```{r message=FALSE,warning=FALSE,error=FALSE}
-TADKB <- readRDS(system.file("extdata", "Mouse_TAD_boundaries.rds",
+gene_location_dynamicNeighbourhood <- read.csv(system.file("extdata", "Mouse_TAD_boundaries.csv",
                              package = "DELocal"))
-gene_location_dynamicNeighbourhood <- TADKB %>% dplyr::select(ensembl_gene_id, 
-                start_position, chromosome_name, startTAD, endTAD) %>% unique()
 
 rownames(gene_location_dynamicNeighbourhood) <- 
     gene_location_dynamicNeighbourhood$ensembl_gene_id
@@ -152,8 +155,11 @@ DELocal_result <- DELocal(pSmrExpt = smrExpt_dynamicNeighbour[one_genes,],
 ```
 
 ## SessionInfo
+
 <details>
+
 ```{r echo=FALSE}
 sessionInfo()
 ```
+
 </details>

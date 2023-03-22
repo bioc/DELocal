@@ -39,7 +39,7 @@ gene_location <- read.table(file = system.file("extdata", "gene_location.txt",
                                     package = "DELocal"))
 smrExpt <- SummarizedExperiment::SummarizedExperiment(assays=list(counts=count_matrix),
                                             rowData = gene_location,
-                                            colData=colData)
+                                            colData = colData)
 contrast= c("condition","ME13","ME14")
 require(dplyr)
 x_genes <- SummarizedExperiment::rowData(smrExpt) \%>\%

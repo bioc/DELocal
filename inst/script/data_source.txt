@@ -1,1 +1,20 @@
-The source and processing of the data could be found here https://doi.org/10.1371/journal.pcbi.1008947
+tooth_RNASeq_counts.txt :: The data is downloaded from https://ftp.ncbi.nlm.nih.gov/geo/series/GSE142nnn/GSE142199/suppl/GSE142199_RNASeq_counts.txt.gz. Following columns or samples are used here
+    ["ME14.E1M1R","ME14.E2M1R","ME14.E3M1R","ME14.E5M1R","ME14.E6M1R","ME14.E6M1L","ME14.E8M1L","ME13.E1M1R","ME13.E2M1L","ME13.E3M1L","ME13.E5M1R","ME13.E7M1L","ME13.E9M1R","ME13.EXM1L"]
+
+gene_location.txt :: The procedure of genarating this has been shon in userGuide vignettes section 0.1.2.1
+
+Mouse_TAD_boundaries.csv :: Downloaded  TAD_annotations.tar.gz from [TADKB](http://dna.cs.miami.edu/TADKB/download.php). It has both human and mouse TAD files. File names with CH12-LX, ES, NPC and CN are mouse cell lines and only those are selected.
+
+```r
+read.TAD <- function(file){
+  x <- file %>% stringi::stri_split(regex = "_|\\.")
+  data_table <- read.table(file = file,header = FALSE)
+  data_table <- cbind(data_table,cell_line=x[[1]][3], Algo=x[[1]][4], Resolution=x[[1]][5])
+}
+files  <- list.files(pattern = '(CH12-LX|ES|NPC|CN)',path = "TAD_annotations/TADs/",full.names = TRUE)
+tables <- lapply(files, read.TAD)
+
+Mouse_TAD_boundaries <- do.call(rbind , tables)
+colnames(Mouse_TAD_boundaries)[1:3] <- c("chromosome_name", "start_TAD", "end_TAD")
+
+```
