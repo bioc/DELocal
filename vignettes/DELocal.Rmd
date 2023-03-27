@@ -87,7 +87,8 @@ rownames(gene_location_sample) <- gene_location_sample$ensembl_gene_id
 #### Integrating gene expression and location into a single object.
 
 ```{r message=FALSE,warning=FALSE,error=FALSE}
-smrExpt <- SummarizedExperiment::SummarizedExperiment(assays=list(counts=count_matrix),
+library(SummarizedExperiment)
+smrExpt <- SummarizedExperiment(assays=list(counts=count_matrix),
                                                       rowData = gene_location, 
                                                       colData=colData)
 smrExpt
@@ -123,7 +124,8 @@ DELocal::plotNeighbourhood(pSmrExpt = smrExpt, pGene_id = "ENSMUSG00000059401",
 
 #### Dynamic neighbour
 
-Here TAD domain boundaries will be used as dynamic boundaries
+In previous example 1 Mb chromosomal area around each gene to define its neighbourhood. The choice of 1Mb window is obviously somewhat arbitrary. However it is also possible to use different size of neighbourhood for each gene. For that user can provide "neighbors_start" and "neighbors_end" for each gene in the rowData.  
+To demonstrate this, TADs (topologically associating domains) boundaries which are different for each gene are used next.  
 
 ```{r message=FALSE,warning=FALSE,error=FALSE}
 gene_location_dynamicNeighbourhood <- read.csv(system.file("extdata", "Mouse_TAD_boundaries.csv",
@@ -144,14 +146,17 @@ smrExpt_dynamicNeighbour <-
         rowData = gene_location_dynamicNeighbourhood[common_genes, ],
         colData = colData
     )
-                                                      
-one_genes <- SummarizedExperiment::rowData(smrExpt_dynamicNeighbour) %>% 
-    as.data.frame() %>% 
-    filter(chromosome_name=="1") %>% rownames() 
 
-DELocal_result <- DELocal(pSmrExpt = smrExpt_dynamicNeighbour[one_genes,], 
+## Selecting only chromosome 1 genes to reduce the runtime                                                      
+# one_genes <- SummarizedExperiment::rowData(smrExpt_dynamicNeighbour) %>% 
+#     as.data.frame() %>% 
+#     filter(chromosome_name=="1") %>% rownames() 
+
+DELocal_result_tad <- DELocal(pSmrExpt = smrExpt_dynamicNeighbour[x_genes,], 
                          nearest_neighbours = 5,pDesign = ~ condition,
                          pValue_cut = 0.05, pLogFold_cut = 0)
+
+head(DELocal_result_tad)
 ```
 
 ## SessionInfo

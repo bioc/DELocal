@@ -51,7 +51,7 @@ DELocal<-
     pSmrExpt <- DESeqDataSet(pSmrExpt, design = pDesign)
     pSmrExpt <- estimateSizeFactors(pSmrExpt)
     SummarizedExperiment::assays(pSmrExpt)$normalized_counts <- counts(pSmrExpt, normalized = TRUE)
-    exp_mat <- as.data.frame(SummarizedExperiment::assays(pSmrExpt)$normalized_counts)
+    exp_mat <- as.data.frame(assays(pSmrExpt)$normalized_counts)
     sample_names <- colnames(exp_mat)
 
     exp_mat$Xgene_id <- rownames(exp_mat)
@@ -75,12 +75,12 @@ DELocal<-
   }
 
 # Table of Top Genes from DELocal Linear Model Fit
-#' @import limma
+#' @importFrom limma topTable lmFit contrasts.fit eBayes
 .DELocal_topTable <- function(pLinear_model,pDesign_matrix,pLogFold_cut,pValue_cut) {
     fit <- lmFit(pLinear_model,pDesign_matrix)
     fit2 <- contrasts.fit(fit, coefficients = ncol(pDesign_matrix))
     fit3 <- eBayes(fit2)
-    top <- limma::topTable(fit3,adjust="BH",number=nrow(pLinear_model),lfc = pLogFold_cut)
+    top <- topTable(fit3,adjust.method="BH",number=nrow(pLinear_model),lfc = pLogFold_cut)
     pos <- which(top[,"adj.P.Val"]<=pValue_cut)
     return(top[pos,])
 }
@@ -99,7 +99,9 @@ DELocal<-
 #'
 #' @importFrom DESeq2 DESeqDataSet estimateSizeFactors counts
 #' @importFrom SummarizedExperiment assays rowData colData
-#' @importFrom dplyr %>% left_join
+#' @importFrom dplyr %>% left_join pull filter
+#' @importFrom matrixStats rowMedians
+#' @importFrom reshape2 melt
 #' @import ggplot2
 #' @examples count_matrix <- as.matrix(read.table(file = system.file("extdata",
 #'                                                                   "tooth_RNASeq_counts.txt",
@@ -127,7 +129,7 @@ plotNeighbourhood<- function(pSmrExpt, pNearest_neighbours=5, pDesign = ~ condit
 
     pSmrExpt <- DESeqDataSet(pSmrExpt , design = pDesign)
     pSmrExpt <- estimateSizeFactors(pSmrExpt)
-    SummarizedExperiment::assays(pSmrExpt)$normalized_counts = counts(pSmrExpt, normalized = TRUE)
+    SummarizedExperiment::assays(pSmrExpt)$normalized_counts <- counts(pSmrExpt, normalized = TRUE)
 
     selected_gene <- pSmrExpt[pGene_id] %>% rowData()
     if ("neighbors_start" %in% (rowData(pSmrExpt) %>% colnames())) {
@@ -141,23 +143,23 @@ plotNeighbourhood<- function(pSmrExpt, pNearest_neighbours=5, pDesign = ~ condit
                                     pSelected_gene = selected_gene,
                                     pNearest_neighbours = pNearest_neighbours )
 
-    exp_mat <- as.data.frame(SummarizedExperiment::assays(neighborsSmExp)$normalized_counts)
+    exp_mat <- as.data.frame(assays(neighborsSmExp)$normalized_counts)
     exp_mat$ensembl_gene_id <- rownames(exp_mat)
     sample_names <- colnames(exp_mat)
 
-    states <- colData(pSmrExpt) %>% as.data.frame() %>% dplyr::pull(colorFactor) %>% unique()
+    states <- colData(pSmrExpt) %>% as.data.frame() %>% pull(colorFactor) %>% unique()
 
     for(i in states){
-        xx <-colData(pSmrExpt) %>% as.data.frame() %>% dplyr::filter(!!sym(colorFactor)==i) %>% rownames()
-        exp_mat[,i] <- exp_mat[,xx] %>% as.matrix() %>% matrixStats::rowMedians()
+        xx <-colData(pSmrExpt) %>% as.data.frame() %>% filter(!!sym(colorFactor)==i) %>% rownames()
+        exp_mat[,i] <- exp_mat[,xx] %>% as.matrix() %>% rowMedians()
     }
 
     result_data <- exp_mat[,c("ensembl_gene_id",as.character(states))] %>%
-        dplyr::left_join(as.data.frame(rowData(neighborsSmExp)),
+        left_join(as.data.frame(rowData(neighborsSmExp)),
                          by = c("ensembl_gene_id" = "ensembl_gene_id"))
 
     results <- list()
-    results$data <-  reshape2::melt(result_data[, c(as.character(states),
+    results$data <-  melt(result_data[, c(as.character(states),
                                      c("start_position","ensembl_gene_id", "chromosome_name"))],
                                     id = c("start_position","ensembl_gene_id", "chromosome_name"))
 
@@ -178,6 +180,7 @@ plotNeighbourhood<- function(pSmrExpt, pNearest_neighbours=5, pDesign = ~ condit
 
 #' @importFrom stats na.omit
 #' @importFrom stats lm median
+#' @importFrom dplyr filter
 .LocalizedLinearModel<-
   function(gene_xprsn_annotation,sample_names,nearest_neighbours){
 
@@ -194,7 +197,7 @@ plotNeighbourhood<- function(pSmrExpt, pNearest_neighbours=5, pDesign = ~ condit
       if ("neighbors_start" %in% colnames(gene_xprsn_annotation)) {
         current_neighbors_start <- gene_xprsn_annotation[i,]$neighbors_start
         current_neighbors_end <- gene_xprsn_annotation[i,]$neighbors_end
-        neighbors <- gene_xprsn_annotation %>% dplyr::filter(
+        neighbors <- gene_xprsn_annotation %>% filter(
             chromosome_name == current_chromosom &
             start_position >= current_neighbors_start  &
             start_position <= current_neighbors_end
@@ -232,11 +235,12 @@ plotNeighbourhood<- function(pSmrExpt, pNearest_neighbours=5, pDesign = ~ condit
   }
 
 #' @importFrom stats na.omit
+#' @importFrom SummarizedExperiment rowData
 .getNeighbours <- function(pSmrExpt,pSelected_gene,pNearest_neighbours){
   neighborsSmExp <- subset(pSmrExpt, subset = (chromosome_name == pSelected_gene$chromosome_name &
                                start_position >= pSelected_gene$neighbors_start  &
                                start_position <= pSelected_gene$neighbors_end))
-  neighbors <- SummarizedExperiment::rowData(neighborsSmExp) %>% as.data.frame()
+  neighbors <- rowData(neighborsSmExp) %>% as.data.frame()
   neighbors$distance <- neighbors$start_position - pSelected_gene$start_position
   neighbors <- neighbors[order(abs(neighbors$distance)),]
   neighbors <- na.omit(neighbors)
