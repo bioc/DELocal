@@ -19,7 +19,7 @@
 #' @importFrom dplyr %>% left_join
 #' @importFrom stats model.matrix
 #' @importFrom DESeq2 DESeqDataSet estimateSizeFactors counts
-#' @importFrom SummarizedExperiment assays rowData colData
+#' @importFrom SummarizedExperiment assays assays<- rowData colData
 #' @examples count_matrix <- as.matrix(read.table(file = system.file("extdata",
 #'                                                                   "tooth_RNASeq_counts.txt",
 #'                                                                   package = "DELocal")))
@@ -42,7 +42,7 @@
 DELocal<-
   function(pSmrExpt,nearest_neighbours,pDesign,pValue_cut = 0.05, pLogFold_cut = 0){
     stopifnot("`pSmrExpt` must be a SummarizedExperiment object" = inherits(pSmrExpt,"SummarizedExperiment"))
-    if("neighbors_start" %in% (SummarizedExperiment::rowData(pSmrExpt) %>% colnames() )){
+    if("neighbors_start" %in% (rowData(pSmrExpt) %>% colnames() )){
         message("User provided neighborhood will be used")
     } else {
         message("Default 1Mb neighborhood will be used")
@@ -50,7 +50,7 @@ DELocal<-
 
     pSmrExpt <- DESeqDataSet(pSmrExpt, design = pDesign)
     pSmrExpt <- estimateSizeFactors(pSmrExpt)
-    SummarizedExperiment::assays(pSmrExpt)$normalized_counts <- counts(pSmrExpt, normalized = TRUE)
+    assays(pSmrExpt)$normalized_counts <- counts(pSmrExpt, normalized = TRUE)
     exp_mat <- as.data.frame(assays(pSmrExpt)$normalized_counts)
     sample_names <- colnames(exp_mat)
 
@@ -98,7 +98,7 @@ DELocal<-
 #' @export
 #'
 #' @importFrom DESeq2 DESeqDataSet estimateSizeFactors counts
-#' @importFrom SummarizedExperiment assays rowData colData
+#' @importFrom SummarizedExperiment assays assays<- rowData colData
 #' @importFrom dplyr %>% left_join pull filter
 #' @importFrom matrixStats rowMedians
 #' @importFrom reshape2 melt
@@ -129,7 +129,7 @@ plotNeighbourhood<- function(pSmrExpt, pNearest_neighbours=5, pDesign = ~ condit
 
     pSmrExpt <- DESeqDataSet(pSmrExpt , design = pDesign)
     pSmrExpt <- estimateSizeFactors(pSmrExpt)
-    SummarizedExperiment::assays(pSmrExpt)$normalized_counts <- counts(pSmrExpt, normalized = TRUE)
+    assays(pSmrExpt)$normalized_counts <- counts(pSmrExpt, normalized = TRUE)
 
     selected_gene <- pSmrExpt[pGene_id] %>% rowData()
     if ("neighbors_start" %in% (rowData(pSmrExpt) %>% colnames())) {
