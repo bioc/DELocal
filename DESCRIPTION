@@ -5,7 +5,7 @@ Authors@R:
     person(given = "Rishi",
            family = "Das Roy",
            role = c("aut", "cre"),
-           email = "rishi.dasroy@helsinki.fi",
+           email = "rishi.dasroy@gmail.com",
            comment = c(ORCID = "0000-0002-3276-7279"))
 Description: The goal of DELocal is to identify DE genes compared to their 
     neighboring genes from the same chromosomal location. It has been shown
