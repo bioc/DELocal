@@ -74,7 +74,7 @@ head(gene_location)
 
 #### Example code to get gene location information like above
 
-```{r eval=TRUE}
+```{r eval=FALSE}
 library(biomaRt)
 gene_attributes <- c("ensembl_gene_id", "start_position", "chromosome_name")
 ensembl_ms_mart <- useMart(biomart="ENSEMBL_MART_ENSEMBL",
@@ -89,8 +89,8 @@ rownames(gene_location_sample) <- gene_location_sample$ensembl_gene_id
 ```{r message=FALSE,warning=FALSE,error=FALSE}
 library(SummarizedExperiment)
 smrExpt <- SummarizedExperiment(assays=list(counts=count_matrix),
-                                                      rowData = gene_location, 
-                                                      colData=colData)
+                                rowData = gene_location, 
+                                colData=colData)
 smrExpt
 ```
 
