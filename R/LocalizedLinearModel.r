@@ -174,7 +174,6 @@ plotNeighbourhood<- function(pSmrExpt, pNearest_neighbours=5, pDesign = ~ condit
             axis.text.x = element_text(size = 10,angle = 45,hjust = 1),
             legend.position = "bottom",
             legend.title = element_blank())
-    message(results$plot)
     return(results)
 }
 
