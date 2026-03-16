@@ -1,6 +1,6 @@
 Package: DELocal
 Title: Identifies differentially expressed genes with respect to other local genes
-Version: 1.10.1
+Version: 1.10.2
 Authors@R: 
     person(given = "Rishi",
            family = "Das Roy",
